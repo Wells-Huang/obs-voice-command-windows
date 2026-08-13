@@ -97,6 +97,7 @@ class ZoomController(threading.Thread):
             try:
                 start = time.time()
 
+                # Decide what to send while holding lock
                 with self._lock:
                     # 1. Update target center if zoomed in
                     if self._target_z > 1.0:
@@ -128,21 +129,25 @@ class ZoomController(threading.Thread):
                         self._cur_cy,
                     )
 
-                    # 4. Idle optimization and send
+                    # 4. Idle optimization: decide what to send
                     if self._cur_z == 1.0 and self._target_z == 1.0:
-                        if not self._idle:
-                            self._send_transform(self._orig)
-                            self._idle = True
+                        to_send = None if self._idle else self._orig
+                        self._idle = True
                     else:
                         self._idle = False
-                        self._send_transform(t)
+                        to_send = t
+
+                # Send OUTSIDE the lock to avoid blocking handle()
+                if to_send is not None:
+                    self._send_transform(to_send)
 
                 # Sleep to maintain 30fps
                 elapsed = time.time() - start
                 sleep_time = max(0, frame_time - elapsed)
                 time.sleep(sleep_time)
 
-            except Exception:
+            except Exception as e:
+                print(f"[ZOOM] controller thread died: {e!r}")
                 break
 
     def _send_transform(self, t: Transform) -> None:
@@ -199,6 +204,9 @@ def main(args) -> None:
     print("Loading ASR model...")
     asr = Asr(ensure_model())
 
+    # Get displays for mouse tracking (needed in both normal and dry-run modes)
+    displays = get_displays()
+
     # Setup OBS and canvas info
     if not args.dry_run:
         obs = ObsClient(cfg.obs.host, cfg.obs.port, cfg.obs.password)
@@ -223,15 +231,11 @@ def main(args) -> None:
         orig = Transform(0, 0, 1, 1)
         canvas = (1920, 1080)
         # Use first display's pixel size
-        displays_list = get_displays()
-        if displays_list:
-            first = displays_list[0]
+        if displays:
+            first = displays[0]
             src = (first.width_px, first.height_px)
         else:
             src = (1920, 1080)
-
-    # Get displays for mouse tracking
-    displays = get_displays()
 
     # Build matcher
     matcher = Matcher(cfg.commands)
@@ -260,7 +264,7 @@ def main(args) -> None:
             callback=audio_callback,
         )
     except sounddevice.PortAudioError as e:
-        print("[ERROR] 麥克風開啟失敗 — 檢查「系統設定 → 隱私權與安全性 → 麥克風」權限")
+        print(f"[ERROR] 麥克風開啟失敗 — 檢查「系統設定 → 隱私權與安全性 → 麥克風」權限。錯誤: {e}")
         sys.exit(1)
 
     # Setup SIGTERM handler
