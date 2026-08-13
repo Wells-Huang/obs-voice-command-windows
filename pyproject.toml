@@ -9,6 +9,7 @@ dependencies = [
     "pypinyin>=0.50",
     "obsws-python>=1.7",
     "pyobjc-framework-Quartz>=10.0",
+    "onnxruntime>=1.28.0",
 ]
 
 [dependency-groups]
