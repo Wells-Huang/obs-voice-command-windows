@@ -34,7 +34,7 @@ uv sync
 uv run obs-voice-command
 ```
 
-程式會用預設設定連接 OBS（localhost:4455）。第一次運行會初始化設定，之後可編輯 `config.toml` 自訂。
+程式會用預設設定連接 OBS（localhost:4455）。沒有 `config.toml` 時全部使用預設值；要自訂請見下方「自訂指令」。
 
 **測試語音辨識** 而不實際動作 OBS：
 
