@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-import objc
 import Quartz
 
 
@@ -18,35 +17,22 @@ class DisplayInfo:
 
 
 def get_displays() -> list[DisplayInfo]:
-    """Fetch all active displays with origin, size in points, and pixel dimensions."""
-    # Use NSScreen for simpler access to display info
-    from AppKit import NSScreen
+    """Fetch all active displays with origin, size in points, and pixel dimensions.
 
+    Uses Quartz global coordinates (top-left origin, y-down) to match get_mouse_pos().
+    """
+    err, ids, count = Quartz.CGGetActiveDisplayList(16, None, None)
     displays = []
-    for screen in NSScreen.screens():
-        frame = screen.frame()
-        bounds = frame[0]  # (origin, size)
-        bounds_rect = screen.frame()
-
-        # Get display ID and pixel dimensions via Quartz
-        desc = screen.deviceDescription()
-        if desc:
-            did = desc.get("NSScreenNumber", 0)
-            px = Quartz.CGDisplayPixelsWide(did)
-            py = Quartz.CGDisplayPixelsHigh(did)
-        else:
-            px = int(bounds_rect.size.width * 2)  # Assume Retina if no device desc
-            py = int(bounds_rect.size.height * 2)
-
+    for did in ids[:count]:
+        b = Quartz.CGDisplayBounds(did)
         displays.append(DisplayInfo(
-            origin_x=float(bounds_rect.origin.x),
-            origin_y=float(bounds_rect.origin.y),
-            width_pts=float(bounds_rect.size.width),
-            height_pts=float(bounds_rect.size.height),
-            width_px=int(px),
-            height_px=int(py)
+            origin_x=float(b.origin.x),
+            origin_y=float(b.origin.y),
+            width_pts=float(b.size.width),
+            height_pts=float(b.size.height),
+            width_px=int(Quartz.CGDisplayPixelsWide(did)),
+            height_px=int(Quartz.CGDisplayPixelsHigh(did)),
         ))
-
     return displays
 
 
