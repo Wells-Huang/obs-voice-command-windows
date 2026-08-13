@@ -1,0 +1,89 @@
+"""macOS mouse position and multi-display layout via Quartz."""
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+import objc
+import Quartz
+
+
+@dataclass(frozen=True)
+class DisplayInfo:
+    origin_x: float
+    origin_y: float
+    width_pts: float
+    height_pts: float
+    width_px: int
+    height_px: int
+
+
+def get_displays() -> list[DisplayInfo]:
+    """Fetch all active displays with origin, size in points, and pixel dimensions."""
+    # Use NSScreen for simpler access to display info
+    from AppKit import NSScreen
+
+    displays = []
+    for screen in NSScreen.screens():
+        frame = screen.frame()
+        bounds = frame[0]  # (origin, size)
+        bounds_rect = screen.frame()
+
+        # Get display ID and pixel dimensions via Quartz
+        desc = screen.deviceDescription()
+        if desc:
+            did = desc.get("NSScreenNumber", 0)
+            px = Quartz.CGDisplayPixelsWide(did)
+            py = Quartz.CGDisplayPixelsHigh(did)
+        else:
+            px = int(bounds_rect.size.width * 2)  # Assume Retina if no device desc
+            py = int(bounds_rect.size.height * 2)
+
+        displays.append(DisplayInfo(
+            origin_x=float(bounds_rect.origin.x),
+            origin_y=float(bounds_rect.origin.y),
+            width_pts=float(bounds_rect.size.width),
+            height_pts=float(bounds_rect.size.height),
+            width_px=int(px),
+            height_px=int(py)
+        ))
+
+    return displays
+
+
+def get_mouse_pos() -> tuple[float, float]:
+    """Get current mouse position in points (global coordinate system, origin top-left)."""
+    ev = Quartz.CGEventCreate(None)
+    loc = Quartz.CGEventGetLocation(ev)
+    return (float(loc.x), float(loc.y))
+
+
+def locate(
+    pos: tuple[float, float],
+    displays: list[DisplayInfo]
+) -> tuple[DisplayInfo, float, float] | None:
+    """Find which display contains position (in points), return pixel coordinates within display.
+
+    Containment: origin_x <= x < origin_x + width_pts (same for y).
+    Pixel scaling: (pos - origin) * (width_px / width_pts).
+    Returns (display, pixel_x, pixel_y) or None if not on any display.
+    """
+    x, y = pos
+
+    for display in displays:
+        x_in_bounds = display.origin_x <= x < display.origin_x + display.width_pts
+        y_in_bounds = display.origin_y <= y < display.origin_y + display.height_pts
+
+        if x_in_bounds and y_in_bounds:
+            # Convert to pixel coordinates within this display
+            rel_x = x - display.origin_x
+            rel_y = y - display.origin_y
+
+            x_scale = display.width_px / display.width_pts
+            y_scale = display.height_px / display.height_pts
+
+            pixel_x = rel_x * x_scale
+            pixel_y = rel_y * y_scale
+
+            return (display, pixel_x, pixel_y)
+
+    return None
