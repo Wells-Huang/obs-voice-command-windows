@@ -1,3 +1,7 @@
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/htlin222/obs-voice-command)](https://github.com/htlin222/obs-voice-command/stargazers)
+[![Python](https://img.shields.io/badge/Python-%3E%3D3.12-3776AB.svg?logo=python&logoColor=white)](https://www.python.org)
+
 # obs-voice-command
 
 macOS 上用語音指令控制 OBS 直播畫面縮放。說「來個特寫」時，畫面平滑 zoom 到滑鼠位置並持續追蹤滑鼠移動；說「退回全畫面」時緩動回全畫面。語音辨識在本機跑（串流中文 ASR），不需網路連線也不需訓練錄音樣本。
@@ -12,7 +16,7 @@ macOS 上用語音指令控制 OBS 直播畫面縮放。說「來個特寫」時
 ## 安裝
 
 ```bash
-git clone https://github.com/your-repo/obs-voice-command.git
+git clone https://github.com/htlin222/obs-voice-command.git
 cd obs-voice-command
 uv sync
 ```
@@ -103,3 +107,37 @@ uv run pytest
 - **asr.py** — sherpa-onnx ASR 驅動、模型下載
 - **obs_client.py** — OBS WebSocket 通訊、指令發送
 - **main.py** — 主迴圈、語音→指令→OBS 協調
+
+## Citation
+
+If you use this project, please cite it:
+
+**BibTeX:**
+
+```bibtex
+@software{lin2026obsvoicecommand,
+  author = {Lin, Hsieh-Ting},
+  title = {obs-voice-command: Voice-commanded zoom-to-mouse for OBS on macOS},
+  year = {2026},
+  url = {https://github.com/htlin222/obs-voice-command},
+  version = {0.1.0}
+}
+```
+
+<details>
+<summary>AMA format</summary>
+
+Lin HT. obs-voice-command: Voice-commanded zoom-to-mouse for OBS on macOS. Published online 2026. https://github.com/htlin222/obs-voice-command
+
+</details>
+
+<details>
+<summary>APA format</summary>
+
+Lin, H.-T. (2026). *obs-voice-command: Voice-commanded zoom-to-mouse for OBS on macOS* (Version 0.1.0) [Computer software]. https://github.com/htlin222/obs-voice-command
+
+</details>
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
