@@ -1,11 +1,34 @@
 """Streaming ASR using sherpa-onnx with bilingual Chinese-English model."""
 
+import importlib.util
 import tarfile
 import urllib.request
 from pathlib import Path
 
+
+def _ensure_onnxruntime_dylib() -> None:
+    """sherpa-onnx 1.13.x macOS wheel 漏包 libonnxruntime.dylib（上游打包 bug）；
+    缺少時從 onnxruntime 套件 symlink 過去。"""
+    spec = importlib.util.find_spec("sherpa_onnx")
+    if spec is None or not spec.submodule_search_locations:
+        return
+    lib_dir = Path(spec.submodule_search_locations[0]) / "lib"
+    link = lib_dir / "libonnxruntime.dylib"
+    if link.exists():
+        return
+    ort_spec = importlib.util.find_spec("onnxruntime")
+    if ort_spec is None or not ort_spec.submodule_search_locations:
+        return
+    capi = Path(ort_spec.submodule_search_locations[0]) / "capi"
+    for dylib in sorted(capi.glob("libonnxruntime.*.dylib")):
+        link.symlink_to(dylib)
+        return
+
+
+_ensure_onnxruntime_dylib()
+
 import numpy as np
-import sherpa_onnx
+import sherpa_onnx  # noqa: E402
 
 MODEL_URL = (
     "https://github.com/k2-fsa/sherpa-onnx/releases/download/"
