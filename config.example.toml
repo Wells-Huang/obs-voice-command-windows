@@ -18,5 +18,5 @@ phrases = ["來個特寫", "放大一點"]
 action = "zoom_in"
 
 [[commands]]
-phrases = ["退回全畫面", "拉遠"]
+phrases = ["退回全畫面", "退出特寫", "退出", "拉遠"]
 action = "zoom_out"

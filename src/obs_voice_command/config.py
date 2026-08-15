@@ -45,7 +45,7 @@ class Config:
 def load_config(path: Path) -> Config:
     default_commands = (
         Command(phrases=("來個特寫", "放大一點"), action="zoom_in"),
-        Command(phrases=("退回全畫面", "拉遠"), action="zoom_out"),
+        Command(phrases=("退回全畫面", "退出特寫", "退出", "拉遠"), action="zoom_out"),
     )
 
     if not path.exists():
