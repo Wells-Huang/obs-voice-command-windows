@@ -10,6 +10,7 @@ dependencies = [
     "obsws-python>=1.7",
     "pyobjc-framework-Quartz>=10.0",
     "onnxruntime>=1.28.0",
+    "opencc-python-reimplemented>=0.1.7",
 ]
 
 [dependency-groups]

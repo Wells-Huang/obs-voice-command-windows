@@ -29,6 +29,7 @@ _ensure_onnxruntime_dylib()
 
 import numpy as np
 import sherpa_onnx  # noqa: E402
+from opencc import OpenCC  # noqa: E402
 
 MODEL_URL = (
     "https://github.com/k2-fsa/sherpa-onnx/releases/download/"
@@ -97,6 +98,8 @@ class Asr:
             feature_dim=80,
         )
         self._stream = self.recognizer.create_stream()
+        # 模型詞表輸出簡體；轉成台灣繁體（s2twp 含用語轉換）
+        self._cc = OpenCC("s2twp")
 
     def feed(self, samples: np.ndarray) -> tuple[str, bool]:
         """Feed audio samples and return recognized text + endpoint flag.
@@ -115,7 +118,7 @@ class Asr:
             self.recognizer.decode_stream(self._stream)
 
         # Get current result
-        text = self.recognizer.get_result(self._stream)
+        text = self._cc.convert(self.recognizer.get_result(self._stream))
 
         # Check for endpoint
         endpoint = self.recognizer.is_endpoint(self._stream)
