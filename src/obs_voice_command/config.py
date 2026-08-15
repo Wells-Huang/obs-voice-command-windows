@@ -30,7 +30,7 @@ class Command:
     action: str
 
     def __post_init__(self):
-        if self.action not in ("zoom_in", "zoom_out"):
+        if self.action not in ("zoom_in", "zoom_out", "os_zoom_in", "os_zoom_out"):
             raise ValueError(f"Invalid action: {self.action}")
 
 
@@ -46,6 +46,8 @@ def load_config(path: Path) -> Config:
     default_commands = (
         Command(phrases=("來個特寫", "放大一點"), action="zoom_in"),
         Command(phrases=("退回全畫面", "退出特寫", "退出", "拉遠"), action="zoom_out"),
+        Command(phrases=("螢幕放大", "放大螢幕"), action="os_zoom_in"),
+        Command(phrases=("螢幕縮小", "縮小螢幕"), action="os_zoom_out"),
     )
 
     if not path.exists():

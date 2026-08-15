@@ -20,3 +20,11 @@ action = "zoom_in"
 [[commands]]
 phrases = ["退回全畫面", "退出特寫", "退出", "拉遠"]
 action = "zoom_out"
+
+[[commands]]
+phrases = ["螢幕放大", "放大螢幕"]
+action = "os_zoom_in"      # 真 macOS 螢幕縮放（觀眾與你都看到放大）
+
+[[commands]]
+phrases = ["螢幕縮小", "縮小螢幕"]
+action = "os_zoom_out"

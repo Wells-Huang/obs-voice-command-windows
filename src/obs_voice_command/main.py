@@ -16,6 +16,7 @@ from .matcher import Matcher
 from .mouse import get_displays, get_mouse_pos, locate
 from .obs_client import ObsClient
 from .zoom import compute_transform, apply_deadzone, smooth, Transform
+from . import os_zoom
 
 
 class ZoomController(threading.Thread):
@@ -295,7 +296,14 @@ def main(args) -> None:
                 if action:
                     print()  # newline before trigger
                     print(f"[TRIGGER] {action}")
-                    controller.handle(action)
+                    if action.startswith("os_"):
+                        if args.dry_run:
+                            print(f"[OS-ZOOM] {action} (dry-run, 不送出按鍵)")
+                        else:
+                            os_zoom.zoom_in() if action == "os_zoom_in" else os_zoom.zoom_out()
+                            print(f"[OS-ZOOM] {action}")
+                    else:
+                        controller.handle(action)
 
                 # Reset on endpoint
                 if endpoint:

@@ -9,7 +9,7 @@ def test_defaults_when_file_missing(tmp_path: Path):
     assert cfg.zoom.smoothing == 0.12
     # 預設指令表必須內建
     actions = {c.action for c in cfg.commands}
-    assert actions == {"zoom_in", "zoom_out"}
+    assert actions == {"zoom_in", "zoom_out", "os_zoom_in", "os_zoom_out"}
     zi = next(c for c in cfg.commands if c.action == "zoom_in")
     assert "來個特寫" in zi.phrases
 
