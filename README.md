@@ -46,6 +46,14 @@ uv run obs-voice-command
 uv run obs-voice-command --dry-run
 ```
 
+**改用真 macOS 螢幕縮放**（輔助使用 Zoom，你和觀眾都看到放大；需開啟「使用鍵盤快速鍵來縮放」並給終端機輔助使用權限）：
+
+```bash
+uv run obs-voice-command --os
+```
+
+同一組語音詞；倍率由 `config.toml` 的 `[zoom] os_level` 控制（預設 1.5）。
+
 **列出系統麥克風**：
 
 ```bash

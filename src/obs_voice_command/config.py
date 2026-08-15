@@ -15,6 +15,7 @@ class ObsConfig:
 @dataclass(frozen=True)
 class ZoomConfig:
     level: float = 2.0
+    os_level: float = 1.5   # --os 模式的目標倍率（OS 全螢幕縮放體感較強，預設較小）
     deadzone: float = 0.15
     smoothing: float = 0.12
 
@@ -30,7 +31,7 @@ class Command:
     action: str
 
     def __post_init__(self):
-        if self.action not in ("zoom_in", "zoom_out", "os_zoom_in", "os_zoom_out"):
+        if self.action not in ("zoom_in", "zoom_out"):
             raise ValueError(f"Invalid action: {self.action}")
 
 
@@ -46,8 +47,6 @@ def load_config(path: Path) -> Config:
     default_commands = (
         Command(phrases=("來個特寫", "放大一點"), action="zoom_in"),
         Command(phrases=("退回全畫面", "退出特寫", "退出", "拉遠"), action="zoom_out"),
-        Command(phrases=("螢幕放大", "放大螢幕"), action="os_zoom_in"),
-        Command(phrases=("螢幕縮小", "縮小螢幕"), action="os_zoom_out"),
     )
 
     if not path.exists():
@@ -73,6 +72,7 @@ def load_config(path: Path) -> Config:
     zoom_data = data.get("zoom", {})
     zoom = ZoomConfig(
         level=zoom_data.get("level", 2.0),
+        os_level=zoom_data.get("os_level", 1.5),
         deadzone=zoom_data.get("deadzone", 0.15),
         smoothing=zoom_data.get("smoothing", 0.12),
     )
