@@ -46,6 +46,7 @@ jobs:
           if (@(0, 2, 3) -notcontains $probeCode) {
             throw "Unexpected dependency-free OBS probe exit code: $probeCode"
           }
+          exit 0
 
       - name: Validate model routing
         shell: pwsh
