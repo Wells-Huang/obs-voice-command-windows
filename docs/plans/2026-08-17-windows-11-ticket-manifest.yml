@@ -365,7 +365,7 @@ tickets:
   - id: W11-001
     epic: E0
     title: Preflight, bootstrap CI, baseline, and read-only OBS probe
-    status: PR
+    status: Done
     completion_profile: layer_a_post_merge
     ci_stage: bootstrap
     arbitration:
@@ -385,6 +385,24 @@ tickets:
       repair_ticket: https://github.com/Wells-Huang/obs-voice-command-windows/issues/2
       last_failed_layer: layer-a / windows-unit
       last_failed_run: https://github.com/Wells-Huang/obs-voice-command-windows/actions/runs/32458671855
+    completion_evidence:
+      pull_request: https://github.com/Wells-Huang/obs-voice-command-windows/pull/1
+      pull_request_head_sha: d6d931a5924e05032ab1f7deaf6355d3f98ba6e7
+      pre_merge_workflow_run: https://github.com/Wells-Huang/obs-voice-command-windows/actions/runs/32459521362
+      pre_merge_workflow_run_id: 32459521362
+      pre_merge_workflow_run_attempt: 2
+      pre_merge_required_gate: success
+      required_check_ruleset_id: 20990581
+      required_check_context: required / gate
+      required_check_integration_id: 15368
+      auto_merge_method: squash
+      merged_develop_sha: 26720559ffa7f7ddab3b2d98599853d62fe21028
+      merged_at: "2026-08-21T09:49:15Z"
+      post_merge_workflow_run: https://github.com/Wells-Huang/obs-voice-command-windows/actions/runs/32469706919
+      post_merge_workflow_run_id: 32469706919
+      post_merge_event: push
+      post_merge_required_gate: success
+      layer_b_required: false
     depends_on: []
     depends_on_external: [empty_origin_baseline_seed]
     blocked_on: []
@@ -414,7 +432,7 @@ tickets:
   - id: W11-002
     epic: E1
     title: Platform boundary and conditional dependencies
-    status: Blocked
+    status: Ready
     completion_profile: layer_a_post_merge
     ci_stage: full_activation
     execution:
