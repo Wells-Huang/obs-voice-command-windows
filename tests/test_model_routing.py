@@ -79,7 +79,7 @@ execution_defaults:
         )
         self.assertRegex(ticket_body, r"(?m)^    ci_stage: bootstrap$")
 
-    def test_w11_001_workflow_is_bootstrap_only_and_has_stable_gate(self) -> None:
+    def test_w11_002_workflow_is_full_activation_with_stable_gate(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(
             encoding="utf-8"
         )
@@ -93,7 +93,8 @@ execution_defaults:
             self.assertIn(job_name, workflow)
 
         self.assertIn("permissions:\n  contents: read", workflow)
-        self.assertGreaterEqual(workflow.count("ci_stage=bootstrap"), 4)
+        self.assertIn("CI_STAGE: full_activation", workflow)
+        self.assertIn("uv sync --frozen", workflow)
         self.assertIn("if: ${{ always() }}", workflow)
         self.assertIn("needs: [windows_unit, macos_regression, package]", workflow)
         self.assertIn("needs.windows_unit.result", workflow)
@@ -101,20 +102,40 @@ execution_defaults:
         self.assertIn("needs.package.result", workflow)
         self.assertNotIn("continue-on-error", workflow)
         self.assertNotIn("secrets.", workflow)
+        self.assertNotIn("CI_STAGE: bootstrap", workflow)
+        self.assertNotIn("ci_stage=bootstrap", workflow)
 
+        workflow_lower = workflow.lower()
         for forbidden in (
-            "uv sync",
-            "pip install",
-            "sherpa-onnx",
-            "sounddevice",
-            "SetSceneItemTransform",
+            "ensure_model",
+            "sounddevice.query",
+            "127.0.0.1:4455",
+            "setsceneitemtransform",
+            "self-hosted",
+            "sounddevice.inputstream",
+            "obs64.exe",
+            "obs32.exe",
+            "start-process obs",
+            "open -a obs",
         ):
-            self.assertNotIn(forbidden, workflow)
+            self.assertNotIn(forbidden, workflow_lower)
 
-        action_refs = re.findall(
-            r"uses:\s+[^\s@]+@([0-9a-f]{40})(?:\s|$)", workflow, flags=re.MULTILINE
+        action_uses = re.findall(
+            r"(?m)^\s+uses:\s+([^\s#]+)(?:\s+#.*)?$", workflow
         )
-        self.assertGreaterEqual(len(action_refs), 3)
+        self.assertGreaterEqual(len(action_uses), 3)
+        for action_use in action_uses:
+            self.assertRegex(action_use, r"^[^@]+@[0-9a-f]{40}$")
+
+        gate_match = re.search(
+            r"(?ms)^  required_gate:\n(?P<body>.*)\Z", workflow
+        )
+        self.assertIsNotNone(gate_match)
+        gate_body = gate_match.group("body") if gate_match else ""
+        self.assertRegex(
+            gate_body,
+            r'(?s)if \[\[ "\$CI_STAGE" != "full_activation" \]\]; then.*?exit 1.*?fi',
+        )
 
 
 if __name__ == "__main__":

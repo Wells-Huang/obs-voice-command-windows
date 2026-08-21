@@ -83,3 +83,24 @@ def test_locate_boundary_point():
     assert display == main
     assert px == 0.0
     assert py == 0.0
+
+
+def test_locate_preserves_display_identity_metadata():
+    display = DisplayInfo(
+        origin_x=-1920.0,
+        origin_y=0.0,
+        width_pts=1920.0,
+        height_pts=1080.0,
+        width_px=1920,
+        height_px=1080,
+        id="display-left",
+        aliases=("DISPLAY2",),
+        primary=False,
+        metadata={"adapter": "fixture"},
+    )
+
+    result = locate((-960.0, 540.0), [display])
+
+    assert result == (display, 960.0, 540.0)
+    assert result[0].id == "display-left"
+    assert result[0].aliases == ("DISPLAY2",)
