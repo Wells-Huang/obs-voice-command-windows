@@ -432,7 +432,7 @@ tickets:
   - id: W11-002
     epic: E1
     title: Platform boundary and conditional dependencies
-    status: Ready
+    status: PR
     completion_profile: layer_a_post_merge
     ci_stage: full_activation
     execution:
