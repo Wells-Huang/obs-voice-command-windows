@@ -432,23 +432,29 @@ tickets:
   - id: W11-002
     epic: E1
     title: Platform boundary and conditional dependencies
-    status: Ready
+    status: Blocked
     completion_profile: layer_a_post_merge
     ci_stage: full_activation
     execution:
       escalation_threshold: low
     arbitration:
-      state: resolved
-      reason: "Windows import and CLI acceptance reaches the top-level Quartz import in os_zoom.py, which is outside the W11-002 touch set and overlaps W11-004 runtime-composition ownership."
-      decision: targeted_repair
-      decision_question: "Expand W11-002 ownership to remove the os_zoom.py Quartz import boundary, or defer the affected acceptance to W11-004 and revise the DAG?"
+      state: requested
+      reason: "W11-002 full_activation correctly removes ci_stage=bootstrap, but the W11-001 routing test still requires bootstrap-only workflow markers and is outside the W11-002 touch set."
+      decision: null
+      decision_question: "Add tests/test_model_routing.py to W11-002 ownership and replace its obsolete bootstrap-only assertion with full_activation and stable-gate assertions?"
       route: windows_arbitrator
       model: gpt-5.6-sol
       model_reasoning_effort: xhigh
-      human_input_required: false
-      confidence: high
+      human_input_required: null
+      confidence: null
       architecture_boundary: "W11-002 owns os_zoom import-time platform segregation only; W11-004 retains runtime capability, CLI ordering, injection, and lifecycle ownership."
       dependency_dag_change: none
+      history:
+        - decision: targeted_repair
+          reason: "Windows import and CLI acceptance reached the top-level Quartz import in os_zoom.py outside the original W11-002 touch set."
+          touch_set_added: src/obs_voice_command/os_zoom.py
+          human_input_required: false
+          confidence: high
     retry:
       state: none
       consecutive_code_failures: 0
