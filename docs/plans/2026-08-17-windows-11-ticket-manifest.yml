@@ -432,15 +432,19 @@ tickets:
   - id: W11-002
     epic: E1
     title: Platform boundary and conditional dependencies
-    status: Ready
+    status: Blocked
     completion_profile: layer_a_post_merge
     ci_stage: full_activation
     execution:
       escalation_threshold: low
     arbitration:
-      state: none
-      reason: null
+      state: requested
+      reason: "Windows import and CLI acceptance reaches the top-level Quartz import in os_zoom.py, which is outside the W11-002 touch set and overlaps W11-004 runtime-composition ownership."
       decision: null
+      decision_question: "Expand W11-002 ownership to remove the os_zoom.py Quartz import boundary, or defer the affected acceptance to W11-004 and revise the DAG?"
+      route: windows_arbitrator
+      model: gpt-5.6-sol
+      model_reasoning_effort: xhigh
     retry:
       state: none
       consecutive_code_failures: 0
