@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "status": "UNREACHABLE_ENDPOINT",
+  "exit_code": 3,
+  "summary": "OBS WebSocket endpoint is unreachable; OBS may be stopped or its server disabled.",
+  "endpoint": {
+    "host": "127.0.0.1",
+    "port": 4455
+  },
+  "metadata": {
+    "password_supplied": false,
+    "password_source": "empty",
+    "password_value_exposed": false,
+    "config_provided": false,
+    "scene_configured": false,
+    "source_configured": false,
+    "read_only_requests": [
+      "GetVersion",
+      "GetCurrentProgramScene",
+      "GetSceneItemList",
+      "GetInputSettings",
+      "GetSceneItemTransform"
+    ]
+  },
+  "details": {
+    "phase": "tcp_connect",
+    "installation": {
+      "installed": true,
+      "running": null,
+      "detection_method": "tasklist_and_common_install_paths",
+      "tcp_error_type": "TimeoutError"
+    }
+  },
+  "evidence": {}
+}

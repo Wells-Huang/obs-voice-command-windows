@@ -1,0 +1,679 @@
+schema_version: 6
+plan: docs/plans/2026-08-17-windows-11-port-plan.md
+agent_policy: AGENTS.md
+workflow_spec: WORKFLOW.md
+baseline_commit: de6c588f981596ed13bc9cd0254ad4989a2686b3
+target_branch: develop
+branch_prefix: codex/
+initial_ticket: W11-001
+repository_topology:
+  origin:
+    url: https://github.com/Wells-Huang/obs-voice-command-windows.git
+    role: windows_delivery
+    observed_state: policy_verified
+    observed_at: "2026-08-18"
+    visibility: public
+    configured_default_branch_before_seed: main
+    seeded_ref: refs/heads/develop
+    seeded_sha: de6c588f981596ed13bc9cd0254ad4989a2686b3
+    observed_head_after_seed: refs/heads/develop
+    observed_ref_count_after_seed: 1
+    authenticated_permissions:
+      verified_at: "2026-08-18"
+      repository_identity: Wells-Huang/obs-voice-command-windows
+      archived: false
+      disabled: false
+      push: true
+      maintain: true
+      admin: true
+      write_dry_run: pass_without_remote_mutation
+  upstream:
+    url: https://github.com/htlin222/obs-voice-command.git
+    role: canonical_read_only_source
+    branch: develop
+    pinned_baseline: de6c588f981596ed13bc9cd0254ad4989a2686b3
+  local_remote_names_verified: true
+plan_arbitrations:
+  - id: PLAN-W11-EMPTY-ORIGIN-BOOTSTRAP
+    state: resolved
+    decision: dependency_dag_change
+    route: windows_arbitrator
+    model: gpt-5.6-sol
+    model_reasoning_effort: xhigh
+    confidence: high
+    human_input_required: true
+    consume_code_retry_budget: false
+model_profiles:
+  implementer:
+    tier: medium
+    preferred_model: "5.6 Luna Max"
+    codex_agent: windows_worker
+    model: gpt-5.6-luna
+    model_reasoning_effort: max
+    sandbox_mode: workspace-write
+    role: implementation
+  arbitrator:
+    tier: high
+    preferred_model: "5.6 Sol XHigh"
+    codex_agent: windows_arbitrator
+    model: gpt-5.6-sol
+    model_reasoning_effort: xhigh
+    sandbox_mode: read-only
+    role: planning_and_arbitration
+execution_defaults:
+  worker_profile: implementer
+  arbitration_profile: arbitrator
+  escalation_threshold: normal
+runtime_routing:
+  engine: codex_subagents
+  state: ready
+  last_validated_at: "2026-08-18"
+  validation_evidence: docs/validation/2026-08-18-model-routing-smoke.md
+  validated_execution_context: codex_exec_standalone
+  project_config: .codex/config.toml
+  agent_directory: .codex/agents
+  validator: tools/validate_model_routing.py
+  validator_command: "powershell -NoProfile -ExecutionPolicy Bypass -File tools/validate_model_routing.ps1"
+  fail_closed: true
+  fallback_to_parent_model: false
+  named_custom_agent_when_supported: true
+  explicit_model_override_required: true
+  explicit_reasoning_effort_override_required: true
+  require_live_route_metadata_check: true
+  validator_network: required
+  validator_network_policy: "run outside the network-disabled Codex sandbox; sandboxed auth failure is indeterminate, not logout"
+  standalone_cli_state: ready
+  standalone_cli_blocker: null
+  implementation_route: windows_worker
+  arbitration_route: windows_arbitrator
+  on_route_unavailable:
+    ticket_status: Blocked
+    routing_state: blocked
+    consume_code_retry_budget: false
+    require_human_action: true
+    block_scope: owning_ticket_and_transitive_descendants
+    continue_independent_ready_tickets: true
+runtime_routing_state_values:
+  - unverified
+  - ready
+  - blocked
+escalation_thresholds:
+  low:
+    attempts_before_escalation: 1
+  normal:
+    attempts_before_escalation: 2
+escalate_on:
+  - acceptance_criteria_conflict
+  - architecture_boundary_change
+  - dependency_dag_change
+  - repeated_same_failure
+  - new_dependency_or_permission
+  - unclear_cross_platform_behavior
+arbitration_state_values:
+  - none
+  - requested
+  - resolved
+retry_state_values:
+  - none
+  - worker_repair_1
+  - worker_repair_2
+  - root_cause_analysis
+  - needs_human
+external_gate_state_values:
+  - seed_not_written
+  - baseline_seeded_policy_incomplete
+  - policy_verified
+  - unexpected_remote_state_needs_human
+external_predecessor_gates:
+  empty_origin_baseline_seed:
+    kind: external_non_code_initialization
+    state: policy_verified
+    predecessor_of: W11-001
+    retry_budget_scope: none
+    destination_repository: https://github.com/Wells-Huang/obs-voice-command-windows.git
+    destination_ref: refs/heads/develop
+    exact_sha: de6c588f981596ed13bc9cd0254ad4989a2686b3
+    exact_refspec: de6c588f981596ed13bc9cd0254ad4989a2686b3:refs/heads/develop
+    exact_seed_command: "git push --porcelain origin de6c588f981596ed13bc9cd0254ad4989a2686b3:refs/heads/develop"
+    one_time_direct_push_exception: approved_and_consumed
+    approval_gate_status:
+      empty_origin_seed_exception_approval: approved_and_consumed
+      non_interactive_github_write_authority: verified
+      non_interactive_github_admin_authority: verified
+    approval_gates:
+      - empty_origin_seed_exception_approval
+      - non_interactive_github_write_authority
+      - non_interactive_github_admin_authority
+    preconditions:
+      - authenticated_repository_identity_verified
+      - permissions_push_true
+      - effective_administration_write_authority
+      - repository_not_archived_or_disabled
+      - origin_has_no_refs_or_head
+      - upstream_develop_equals_pinned_baseline
+      - local_commit_object_verified
+      - write_capable_collaborators_apps_and_deploy_keys_audited
+    command_constraints:
+      allowed:
+        - exact_full_oid_to_absent_develop_ref
+      forbidden:
+        - force
+        - mirror
+        - all_branches
+        - tags
+        - local_branch_name_as_source
+        - any_second_direct_push
+        - any_uncommitted_worktree_content
+    postconditions:
+      - origin_has_exactly_one_ref
+      - origin_develop_equals_pinned_baseline
+      - develop_is_default_branch
+      - squash_merge_enabled
+      - merge_commits_disabled
+      - rebase_merge_disabled
+      - repository_auto_merge_enabled
+      - delete_head_branches_enabled
+      - active_develop_ruleset_with_empty_bypass_list
+      - pull_requests_required_with_zero_mandatory_reviews
+      - linear_history_required
+      - deletion_and_non_fast_forward_blocked
+    observed_evidence:
+      pre_seed_complete_ref_listing: pass_empty
+      exact_seed_command_and_porcelain_result: pass_new_develop_ref
+      post_seed_complete_ref_listing: pass_one_ref_exact_sha
+      default_branch: pass_develop
+      squash_merge_enabled: pass
+      merge_commits_disabled: pass
+      rebase_merge_disabled: pass
+      delete_head_branches_enabled: pass
+      repository_auto_merge_enabled: pass
+      active_develop_ruleset_with_empty_bypass_list: pass_ruleset_20990581
+      pull_requests_required_with_zero_mandatory_reviews: pass
+      linear_history_required: pass
+      deletion_and_non_fast_forward_blocked: pass
+    ruleset:
+      id: 20990581
+      name: develop-zero-bypass
+      enforcement: active
+      target: branch
+      ref_include: [refs/heads/develop]
+      bypass_actors: []
+      allowed_merge_methods: [squash]
+      required_approving_review_count: 0
+      required_review_thread_resolution: true
+    policy_blockers: []
+    policy_decision_required: null
+    evidence_required:
+      - explicit_approval_id_and_timestamp
+      - authenticated_effective_permissions
+      - pre_seed_complete_ref_listing
+      - upstream_pinned_sha
+      - exact_seed_command_and_porcelain_result
+      - post_seed_complete_ref_listing
+      - default_branch_response
+      - repository_merge_settings
+      - active_ruleset_export_and_timestamp
+      - empty_bypass_list
+    rollback:
+      seed_not_written: stop_without_alternative_push
+      baseline_seeded_policy_incomplete: freeze_repository_and_block_w11_001
+      unexpected_remote_state_needs_human: no_automatic_force_rewrite_delete_or_recreate
+completion_profiles:
+  layer_a_post_merge:
+    applies_to: [W11-001, W11-002, W11-003, W11-004, W11-005, W11-006, W11-007, W11-008, W11-009]
+    pre_merge_requires:
+      - active_zero_bypass_pull_request_rule
+      - zero_required_human_reviews_for_unattended
+      - required_gate_success_on_exact_head_sha
+      - github_squash_auto_merge
+    done_requires:
+      - trusted_ci_push_run_success_on_exact_merged_develop_sha
+    temporary_provider: .github/workflows/ci.yml
+  layer_a_post_merge_automated:
+    applies_to: [W11-010]
+    pre_merge_requires:
+      - active_zero_bypass_pull_request_rule
+      - zero_required_human_reviews_for_unattended
+      - required_gate_success_on_exact_head_sha
+      - github_squash_auto_merge
+    done_requires:
+      - trusted_post_merge_run_success_on_exact_merged_develop_sha
+      - repair_deduplication_active
+    provider: .github/workflows/post-merge.yml
+  layer_a_plus_layer_b_exact_sha:
+    applies_to: [W11-011, W11-012]
+    done_requires:
+      - trusted_post_merge_layer_a_success
+      - windows11_integration_obs_e2e_success
+      - baseline_transform_cleanup_success
+      - both_layers_match_exact_merged_develop_sha
+    release_candidate_additions:
+      - all_predecessor_tickets_done
+      - no_unresolved_blocking_repair_ticket
+      - clean_clone_and_package_verification
+quality_gates:
+  layer_a:
+    timing: pre_merge_and_post_merge
+    triggers: [pull_request, merge_group, push_develop]
+    windows_runner: windows-latest
+    required_jobs:
+      - layer-a / windows-unit
+      - layer-a / macos-regression
+      - layer-a / package
+    aggregate_check: required / gate
+    auto_merge_requires: all_required_checks_success
+    bootstrap_stage:
+      owner: W11-001
+      scope: [dependency_lazy_obs_probe, model_routing_validator, manifest, planning_artifacts]
+      forbidden: [project_install_on_windows, microphone, asr_model_download, real_obs]
+    full_activation_owner: W11-002
+    hardening_owner: W11-005
+  layer_b:
+    timing: post_merge
+    triggers: [push_develop, authorized_workflow_dispatch]
+    runner_labels: [self-hosted, Windows, X64, obs-integration]
+    check: windows11-integration / obs-e2e
+    endpoint: "127.0.0.1:4455"
+    implemented_by: W11-010
+    activated_by: W11-011
+    required_for_completion_profiles: [layer_a_plus_layer_b_exact_sha]
+    sequence:
+      - start_test_obs
+      - wait_for_websocket
+      - snapshot_baseline_transform
+      - run_integration_harness
+      - send_zoom_command
+      - read_obs_transform
+      - validate_zoom_state
+      - send_zoom_out
+      - validate_baseline_restore
+      - always_cleanup
+unattended_execution:
+  enabled: true
+  browser_launch: forbidden
+  device_auth_launch: forbidden
+  allowed_auth:
+    - existing_cli_session
+    - existing_scoped_token
+    - existing_app_credentials
+  on_interactive_auth_required:
+    ticket_status: Blocked
+    block_scope: owning_ticket_and_transitive_descendants
+    consume_code_retry_budget: false
+    continue_independent_ready_tickets: true
+  deferred_human_gates:
+    - github_bootstrap_admin
+    - github_policy_admin
+    - shared_runtime_mutation
+    - windows11_real_hardware_lab
+    - tag_and_github_release_publication
+failure_classification:
+  non_code_failures:
+    - runner_unavailable
+    - github_service_outage
+    - secret_unavailable
+    - obs_lab_unavailable
+    - authentication_unavailable
+    - authorization_unavailable
+    - approval_gate_unmet
+  consume_code_retry_budget: false
+  block_scope: owning_ticket_and_transitive_descendants
+  continue_independent_ready_tickets: true
+retry_budget:
+  scope: originating_ticket_and_repair_lineage
+  code_failure_limit: 4
+  infrastructure_retry_limit: 2
+  ci_failures_override_escalation_threshold: true
+  reset_consecutive_on: complete_layer_pass_on_latest_relevant_commit
+  transitions:
+    "1": implementer_repair
+    "2": implementer_repair
+    "3": high_tier_root_cause_analysis
+    "4": stop_and_needs_human
+status_values:
+  - Ready
+  - Blocked
+  - Doing
+  - PR
+  - Merged
+  - Done
+required_check: required / gate
+orchestrator_rules:
+  dispatch_only_when_dependencies_done: true
+  one_ticket_per_branch: true
+  one_ticket_per_worktree: true
+  block_overlapping_touch_sets: true
+  done_requires_selected_completion_profile_pass: true
+  repair_on_post_merge_failure: true
+  auto_merge_only_after_required_checks: true
+  never_bypass_branch_protection: true
+  direct_push_to_develop_forbidden: true
+  empty_origin_seed_exception:
+    gate: empty_origin_baseline_seed
+    allowed_only_after_explicit_human_approval: true
+    allowed_only_when_destination_ref_is_absent: true
+    allowed_exact_sha: de6c588f981596ed13bc9cd0254ad4989a2686b3
+    allowed_exact_ref: refs/heads/develop
+    consumed_after_successful_ref_creation: true
+    all_follow_up_direct_pushes_forbidden: true
+  evaluate_ticket_completion_profile: true
+  require_exact_sha_evidence: true
+  block_needs_human_scope: owning_ticket_and_transitive_descendants
+  continue_independent_ready_tickets: true
+  never_launch_browser_when_unattended: true
+tickets:
+  - id: W11-001
+    epic: E0
+    title: Preflight, bootstrap CI, baseline, and read-only OBS probe
+    status: PR
+    completion_profile: layer_a_post_merge
+    ci_stage: bootstrap
+    arbitration:
+      state: resolved
+      reason: "Removed the circular global Layer B and downstream-CI completion gates; real OBS evidence belongs to W11-011."
+      decision: dependency_dag_change
+      human_input_required: true
+      profile: arbitrator
+      route: windows_arbitrator
+      model: gpt-5.6-sol
+      model_reasoning_effort: xhigh
+      confidence: high
+    retry:
+      state: none
+      consecutive_code_failures: 0
+      total_code_failures: 1
+      repair_ticket: https://github.com/Wells-Huang/obs-voice-command-windows/issues/2
+      last_failed_layer: layer-a / windows-unit
+      last_failed_run: https://github.com/Wells-Huang/obs-voice-command-windows/actions/runs/32458671855
+    depends_on: []
+    depends_on_external: [empty_origin_baseline_seed]
+    blocked_on: []
+    touch_set:
+      - .gitignore
+      - AGENTS.md
+      - WORKFLOW.md
+      - .codex/**
+      - docs/plans/**
+      - docs/validation/**
+      - tools/inspect_obs_contract.py
+      - tools/validate_model_routing.py
+      - tools/validate_model_routing.ps1
+      - tests/test_inspect_obs_contract.py
+      - tests/test_model_routing.py
+      - .github/workflows/ci.yml
+    approval_gates:
+      - empty_origin_seed_exception_approval
+      - github_bootstrap_admin
+      - out_of_band_non_interactive_github_credential
+      - project_local_runtime_creation_if_needed
+    approval_gate_status:
+      empty_origin_seed_exception_approval: approved_and_consumed
+      github_bootstrap_admin: verified
+      out_of_band_non_interactive_github_credential: verified
+      project_local_runtime_creation_if_needed: pending_until_install_required
+  - id: W11-002
+    epic: E1
+    title: Platform boundary and conditional dependencies
+    status: Blocked
+    completion_profile: layer_a_post_merge
+    ci_stage: full_activation
+    execution:
+      escalation_threshold: low
+    arbitration:
+      state: none
+      reason: null
+      decision: null
+    retry:
+      state: none
+      consecutive_code_failures: 0
+      total_code_failures: 0
+      repair_ticket: null
+      last_failed_layer: null
+      last_failed_run: null
+    depends_on: [W11-001]
+    touch_set:
+      - pyproject.toml
+      - uv.lock
+      - .github/workflows/ci.yml
+      - src/obs_voice_command/mouse.py
+      - src/obs_voice_command/platform/**
+      - tests/test_mouse.py
+      - tests/test_platform*.py
+  - id: W11-003
+    epic: E1
+    title: Windows pointer and display backend
+    status: Blocked
+    completion_profile: layer_a_post_merge
+    ci_stage: full
+    arbitration:
+      state: none
+      reason: null
+      decision: null
+    retry:
+      state: none
+      consecutive_code_failures: 0
+      total_code_failures: 0
+      repair_ticket: null
+      last_failed_layer: null
+      last_failed_run: null
+    depends_on: [W11-005]
+    touch_set:
+      - src/obs_voice_command/platform/windows.py
+      - tests/test_windows_display.py
+  - id: W11-004
+    epic: E2
+    title: Runtime composition, CLI capability, and lifecycle seam
+    status: Blocked
+    completion_profile: layer_a_post_merge
+    ci_stage: full
+    arbitration:
+      state: none
+      reason: null
+      decision: null
+    retry:
+      state: none
+      consecutive_code_failures: 0
+      total_code_failures: 0
+      repair_ticket: null
+      last_failed_layer: null
+      last_failed_run: null
+    depends_on: [W11-005]
+    touch_set:
+      - src/obs_voice_command/main.py
+      - src/obs_voice_command/asr.py
+      - src/obs_voice_command/os_zoom.py
+      - src/obs_voice_command/runtime.py
+      - tests/test_cli.py
+      - tests/test_controller.py
+  - id: W11-005
+    epic: E4
+    title: Full Layer A required-gate hardening
+    status: Blocked
+    completion_profile: layer_a_post_merge
+    ci_stage: full
+    arbitration:
+      state: none
+      reason: null
+      decision: null
+    retry:
+      state: none
+      consecutive_code_failures: 0
+      total_code_failures: 0
+      repair_ticket: null
+      last_failed_layer: null
+      last_failed_run: null
+    depends_on: [W11-002]
+    touch_set:
+      - uv.lock
+      - .github/workflows/ci.yml
+  - id: W11-006
+    epic: E3
+    title: Windows OBS capture resolver and monitor mapping
+    status: Blocked
+    completion_profile: layer_a_post_merge
+    ci_stage: full
+    execution:
+      escalation_threshold: low
+    arbitration:
+      state: none
+      reason: null
+      decision: null
+    retry:
+      state: none
+      consecutive_code_failures: 0
+      total_code_failures: 0
+      repair_ticket: null
+      last_failed_layer: null
+      last_failed_run: null
+    depends_on: [W11-003, W11-004]
+    touch_set:
+      - src/obs_voice_command/obs_client.py
+      - src/obs_voice_command/config.py
+      - tests/test_obs_client.py
+      - tests/test_capture_mapping.py
+  - id: W11-007
+    epic: E4
+    title: Hardware-free application integration suite
+    status: Blocked
+    completion_profile: layer_a_post_merge
+    ci_stage: full
+    arbitration:
+      state: none
+      reason: null
+      decision: null
+    retry:
+      state: none
+      consecutive_code_failures: 0
+      total_code_failures: 0
+      repair_ticket: null
+      last_failed_layer: null
+      last_failed_run: null
+    depends_on: [W11-006]
+    touch_set:
+      - tests/fakes/**
+      - tests/test_application_pipeline.py
+      - tests/test_reconnect_restore.py
+  - id: W11-008
+    epic: E5
+    title: Windows documentation and setup UX
+    status: Blocked
+    completion_profile: layer_a_post_merge
+    ci_stage: full
+    arbitration:
+      state: none
+      reason: null
+      decision: null
+    retry:
+      state: none
+      consecutive_code_failures: 0
+      total_code_failures: 0
+      repair_ticket: null
+      last_failed_layer: null
+      last_failed_run: null
+    depends_on: [W11-006]
+    touch_set:
+      - README.md
+      - config.example.toml
+      - docs/windows/**
+  - id: W11-009
+    epic: E6
+    title: Ticket tracker, PR gate, and auto-merge
+    status: Blocked
+    completion_profile: layer_a_post_merge
+    ci_stage: full
+    execution:
+      escalation_threshold: low
+    arbitration:
+      state: none
+      reason: null
+      decision: null
+    retry:
+      state: none
+      consecutive_code_failures: 0
+      total_code_failures: 0
+      repair_ticket: null
+      last_failed_layer: null
+      last_failed_run: null
+    depends_on: [W11-005]
+    touch_set:
+      - .github/PULL_REQUEST_TEMPLATE.md
+      - .github/ISSUE_TEMPLATE/**
+      - .github/labels.yml
+    approval_gates:
+      - github_policy_admin
+  - id: W11-010
+    epic: E6
+    title: Authoritative post-merge Layer A, inactive Layer B harness, and Repair Ticket loop
+    status: Blocked
+    completion_profile: layer_a_post_merge_automated
+    ci_stage: post_merge_automation
+    execution:
+      escalation_threshold: low
+    arbitration:
+      state: none
+      reason: null
+      decision: null
+    retry:
+      state: none
+      consecutive_code_failures: 0
+      total_code_failures: 0
+      repair_ticket: null
+      last_failed_layer: null
+      last_failed_run: null
+    depends_on: [W11-007, W11-008, W11-009]
+    touch_set:
+      - .github/workflows/post-merge.yml
+      - .github/workflows/windows11-integration.yml
+      - .github/ISSUE_TEMPLATE/repair.yml
+      - tools/windows11_integration_harness.py
+      - tests/integration/windows11/**
+  - id: W11-011
+    epic: E4
+    title: Windows 11 real-machine E2E certification
+    status: Blocked
+    completion_profile: layer_a_plus_layer_b_exact_sha
+    ci_stage: layer_b_activation
+    arbitration:
+      state: none
+      reason: null
+      decision: null
+    retry:
+      state: none
+      consecutive_code_failures: 0
+      total_code_failures: 0
+      repair_ticket: null
+      last_failed_layer: null
+      last_failed_run: null
+    depends_on: [W11-010]
+    touch_set:
+      - docs/validation/windows-11-e2e-*.md
+      - .github/workflows/windows11-integration.yml
+    approval_gates:
+      - windows11_real_hardware_lab
+  - id: W11-012
+    epic: E7
+    title: Release candidate and final handoff
+    status: Blocked
+    completion_profile: layer_a_plus_layer_b_exact_sha
+    ci_stage: release_candidate
+    release_readiness_required: true
+    arbitration:
+      state: none
+      reason: null
+      decision: null
+    retry:
+      state: none
+      consecutive_code_failures: 0
+      total_code_failures: 0
+      repair_ticket: null
+      last_failed_layer: null
+      last_failed_run: null
+    depends_on: [W11-011]
+    touch_set:
+      - pyproject.toml
+      - README.md
+      - CITATION.cff
+      - citation.bib
+      - docs/releases/**
+    approval_gates:
+      - tag and GitHub Release publication
