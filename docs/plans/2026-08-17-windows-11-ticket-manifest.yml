@@ -365,7 +365,7 @@ tickets:
   - id: W11-001
     epic: E0
     title: Preflight, bootstrap CI, baseline, and read-only OBS probe
-    status: Doing
+    status: PR
     completion_profile: layer_a_post_merge
     ci_stage: bootstrap
     arbitration:
@@ -379,8 +379,8 @@ tickets:
       model_reasoning_effort: xhigh
       confidence: high
     retry:
-      state: worker_repair_1
-      consecutive_code_failures: 1
+      state: none
+      consecutive_code_failures: 0
       total_code_failures: 1
       repair_ticket: https://github.com/Wells-Huang/obs-voice-command-windows/issues/2
       last_failed_layer: layer-a / windows-unit
