@@ -47,6 +47,8 @@ jobs:
 
       - name: Verify Windows imports stay Quartz-free
         shell: pwsh
+        env:
+          PYTHONIOENCODING: utf-8
         run: |
           uv run --frozen python -c "import sys; import obs_voice_command.os_zoom; import obs_voice_command.main; assert 'Quartz' not in sys.modules; print('Windows import smoke: PASS')"
           uv run --frozen obs-voice-command --help
@@ -138,10 +140,35 @@ jobs:
           sdist_path="$(find "$GITHUB_WORKSPACE/dist" -maxdepth 1 -name '*.tar.gz' -print -quit)"
           test -n "$wheel_path"
           test -n "$sdist_path"
-          uv pip install --python .venv/bin/python --reinstall --no-deps "$wheel_path"
           artifact_dir="$(mktemp -d)"
+          artifact_env="$artifact_dir/venv"
+          uv venv "$artifact_env"
+          uv pip install --python "$artifact_env/bin/python" --no-deps "$wheel_path"
           cd "$artifact_dir"
-          "$GITHUB_WORKSPACE/.venv/bin/python" -c "import obs_voice_command; import obs_voice_command.main; print('built artifact import: PASS')"
+          WHEEL_PATH="$wheel_path" "$artifact_env/bin/python" -c '
+          import importlib.metadata
+          import os
+          from pathlib import Path
+
+          import obs_voice_command
+          import obs_voice_command.mouse
+          import obs_voice_command.os_zoom
+          import obs_voice_command.platform
+          import obs_voice_command.platform.common
+          import obs_voice_command.platform.unsupported
+          import obs_voice_command.platform.windows
+
+          wheel_path = Path(os.environ["WHEEL_PATH"]).resolve()
+          distribution = importlib.metadata.distribution("obs-voice-command")
+          module_path = Path(obs_voice_command.__file__).resolve()
+          site_packages = Path(distribution.locate_file("")).resolve()
+
+          assert wheel_path.suffix == ".whl"
+          assert distribution.version in wheel_path.name
+          assert module_path.is_relative_to(site_packages), (module_path, site_packages)
+          assert Path(distribution.locate_file("obs_voice_command/os_zoom.py")).is_file()
+          print(f"built artifact import: PASS (wheel={wheel_path.name})")
+          '
 
   required_gate:
     name: required / gate
