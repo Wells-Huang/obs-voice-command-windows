@@ -1,0 +1,199 @@
+name: Windows 11 Layer A
+
+on:
+  pull_request:
+  push:
+    branches:
+      - develop
+  merge_group:
+
+permissions:
+  contents: read
+
+env:
+  CI_STAGE: bootstrap
+
+jobs:
+  windows_unit:
+    name: layer-a / windows-unit
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Record bootstrap stage
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path bootstrap-evidence | Out-Null
+          Set-Content -LiteralPath bootstrap-evidence\ci-stage.txt -Value 'ci_stage=bootstrap' -Encoding utf8
+          Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Value 'ci_stage=bootstrap' -Encoding utf8
+
+      - name: Select dependency-free Python runtime
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Run read-only OBS contract probe
+        shell: pwsh
+        run: |
+          $probeJson = Join-Path $env:GITHUB_WORKSPACE 'bootstrap-evidence\obs-contract-probe.json'
+          $probeLog = Join-Path $env:GITHUB_WORKSPACE 'bootstrap-evidence\obs-contract-probe.log'
+          & python tools/inspect_obs_contract.py --host 127.0.0.1 --port 4455 --timeout 0.5 --output $probeJson --json *> $probeLog
+          $probeCode = $LASTEXITCODE
+          Get-Content -LiteralPath $probeLog
+          if (@(0, 2, 3) -notcontains $probeCode) {
+            throw "Unexpected dependency-free OBS probe exit code: $probeCode"
+          }
+
+      - name: Validate model routing
+        shell: pwsh
+        run: python tools/validate_model_routing.py --root . --json
+
+      - name: Run hardware-free bootstrap tests
+        shell: pwsh
+        run: python -m unittest -v tests.test_inspect_obs_contract tests.test_model_routing
+
+      - name: Check planning artifacts
+        shell: pwsh
+        run: |
+          python -c "from pathlib import Path; required=['AGENTS.md','WORKFLOW.md','.codex/config.toml','.codex/agents/windows-worker.toml','docs/plans/2026-08-17-windows-11-port-plan.md','docs/plans/2026-08-17-windows-11-ticket-manifest.yml','docs/validation/2026-08-18-model-routing-smoke.md','docs/validation/2026-08-18-obs-contract-probe.json','docs/validation/2026-08-18-w11-001-preflight.md','docs/validation/2026-08-21-w11-001-bootstrap-local.md','tools/inspect_obs_contract.py','tools/validate_model_routing.py','.github/workflows/ci.yml']; missing=[path for path in required if not Path(path).is_file()]; print('planning artifacts: ' + ('PASS' if not missing else 'MISSING ' + ', '.join(missing))); raise SystemExit(1 if missing else 0)"
+
+      - name: Upload bootstrap evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ci-stage-bootstrap-windows-unit
+          path: bootstrap-evidence/
+          if-no-files-found: error
+          retention-days: 7
+
+  macos_regression:
+    name: layer-a / macos-regression
+    runs-on: macos-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Record bootstrap stage
+        shell: bash
+        run: |
+          mkdir -p bootstrap-evidence
+          printf '%s\n' 'ci_stage=bootstrap' > bootstrap-evidence/ci-stage.txt
+          printf '%s\n' 'ci_stage=bootstrap' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Select dependency-free Python runtime
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Run read-only OBS contract probe
+        shell: bash
+        run: |
+          set +e
+          python tools/inspect_obs_contract.py --host 127.0.0.1 --port 4455 --timeout 0.5 --output bootstrap-evidence/obs-contract-probe.json --json > bootstrap-evidence/obs-contract-probe.log 2>&1
+          probe_status=$?
+          set -e
+          cat bootstrap-evidence/obs-contract-probe.log
+          if [[ "$probe_status" != 0 && "$probe_status" != 2 && "$probe_status" != 3 ]]; then
+            echo "Unexpected dependency-free OBS probe exit code: $probe_status" >&2
+            exit "$probe_status"
+          fi
+
+      - name: Validate model routing
+        shell: bash
+        run: python tools/validate_model_routing.py --root . --json
+
+      - name: Run hardware-free bootstrap tests
+        shell: bash
+        run: python -m unittest -v tests.test_inspect_obs_contract tests.test_model_routing
+
+      - name: Check planning artifacts
+        shell: bash
+        run: |
+          python -c "from pathlib import Path; required=['AGENTS.md','WORKFLOW.md','.codex/config.toml','.codex/agents/windows-worker.toml','docs/plans/2026-08-17-windows-11-port-plan.md','docs/plans/2026-08-17-windows-11-ticket-manifest.yml','docs/validation/2026-08-18-model-routing-smoke.md','docs/validation/2026-08-18-obs-contract-probe.json','docs/validation/2026-08-18-w11-001-preflight.md','docs/validation/2026-08-21-w11-001-bootstrap-local.md','tools/inspect_obs_contract.py','tools/validate_model_routing.py','.github/workflows/ci.yml']; missing=[path for path in required if not Path(path).is_file()]; print('planning artifacts: ' + ('PASS' if not missing else 'MISSING ' + ', '.join(missing))); raise SystemExit(1 if missing else 0)"
+
+      - name: Upload bootstrap evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ci-stage-bootstrap-macos-regression
+          path: bootstrap-evidence/
+          if-no-files-found: error
+          retention-days: 7
+
+  package:
+    name: layer-a / package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Record bootstrap stage
+        shell: bash
+        run: |
+          mkdir -p bootstrap-evidence
+          printf '%s\n' 'ci_stage=bootstrap' > bootstrap-evidence/ci-stage.txt
+          printf '%s\n' 'ci_stage=bootstrap' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Select dependency-free Python runtime
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Validate model routing and bootstrap artifacts
+        shell: bash
+        run: |
+          python tools/validate_model_routing.py --root . --json
+          python -m unittest -v tests.test_model_routing
+          python -c "from pathlib import Path; required=['AGENTS.md','WORKFLOW.md','.codex/config.toml','.codex/agents/windows-worker.toml','docs/plans/2026-08-17-windows-11-port-plan.md','docs/plans/2026-08-17-windows-11-ticket-manifest.yml','docs/validation/2026-08-18-model-routing-smoke.md','docs/validation/2026-08-18-obs-contract-probe.json','docs/validation/2026-08-18-w11-001-preflight.md','docs/validation/2026-08-21-w11-001-bootstrap-local.md','tools/inspect_obs_contract.py','tools/validate_model_routing.py','.github/workflows/ci.yml']; missing=[path for path in required if not Path(path).is_file()]; print('planning artifacts: ' + ('PASS' if not missing else 'MISSING ' + ', '.join(missing))); raise SystemExit(1 if missing else 0)"
+
+      - name: Upload bootstrap evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ci-stage-bootstrap-package
+          path: bootstrap-evidence/
+          if-no-files-found: error
+          retention-days: 7
+
+  required_gate:
+    name: required / gate
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    needs: [windows_unit, macos_regression, package]
+    steps:
+      - name: Record bootstrap stage
+        shell: bash
+        run: |
+          mkdir -p bootstrap-evidence
+          printf '%s\n' 'ci_stage=bootstrap' > bootstrap-evidence/ci-stage.txt
+          printf '%s\n' 'ci_stage=bootstrap' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Require every Layer A job to succeed
+        shell: bash
+        env:
+          WINDOWS_UNIT_RESULT: ${{ needs.windows_unit.result }}
+          MACOS_REGRESSION_RESULT: ${{ needs.macos_regression.result }}
+          PACKAGE_RESULT: ${{ needs.package.result }}
+        run: |
+          printf 'windows_unit=%s\nmacos_regression=%s\npackage=%s\n' "$WINDOWS_UNIT_RESULT" "$MACOS_REGRESSION_RESULT" "$PACKAGE_RESULT" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$WINDOWS_UNIT_RESULT" != "success" || "$MACOS_REGRESSION_RESULT" != "success" || "$PACKAGE_RESULT" != "success" ]]; then
+            echo 'required / gate: FAIL (every required Layer A job must report success)' >&2
+            exit 1
+          fi
+          echo 'required / gate: PASS (every required Layer A job reported success)' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload bootstrap evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ci-stage-bootstrap-required-gate
+          path: bootstrap-evidence/
+          if-no-files-found: error
+          retention-days: 7

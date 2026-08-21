@@ -1,0 +1,4 @@
+# Standalone Codex CLI custom-agent routes are supplied explicitly at spawn time.
+# Keep this file intentionally empty: executable defaults live in the ticket
+# manifest, while .codex/agents/*.toml pins each named route and every ticket
+# dispatch passes explicit model and reasoning-effort overrides.
