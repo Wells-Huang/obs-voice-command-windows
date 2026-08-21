@@ -12,4 +12,3 @@ Implement code and tests, run the ticket's relevant local checks, and return con
 
 If an escalation condition is reached, stop changing files and return an escalation packet containing ticket_id, failing_layer_or_check, commit_and_run_url, exact_failing_command, relevant_log_excerpt, attempted_repairs, current_diff_summary, and decision_question. Do not perform arbitration and do not spawn a substitute agent.
 """
-

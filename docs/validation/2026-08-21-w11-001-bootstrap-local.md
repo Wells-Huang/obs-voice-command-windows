@@ -1,7 +1,7 @@
 # W11-001 bootstrap workflow local evidence
 
-Date: 2026-08-21 (Asia/Taipei)  
-Ticket: W11-001  
+Date: 2026-08-21 (Asia/Taipei)
+Ticket: W11-001
 Branch: `codex/w11-001-bootstrap`
 
 ## Scope

@@ -12,4 +12,3 @@ Return exactly one JSON object with these keys: ticket_id, decision, root_cause,
 
 If evidence is insufficient, choose needs_human and state the missing evidence. Do not guess around architecture, permissions, secrets, or acceptance-criteria conflicts.
 """
-
