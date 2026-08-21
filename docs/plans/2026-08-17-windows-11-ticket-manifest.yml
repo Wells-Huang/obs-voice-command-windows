@@ -432,27 +432,33 @@ tickets:
   - id: W11-002
     epic: E1
     title: Platform boundary and conditional dependencies
-    status: Blocked
+    status: Ready
     completion_profile: layer_a_post_merge
     ci_stage: full_activation
     execution:
       escalation_threshold: low
     arbitration:
-      state: requested
+      state: resolved
       reason: "W11-002 full_activation correctly removes ci_stage=bootstrap, but the W11-001 routing test still requires bootstrap-only workflow markers and is outside the W11-002 touch set."
-      decision: null
+      decision: targeted_repair
       decision_question: "Add tests/test_model_routing.py to W11-002 ownership and replace its obsolete bootstrap-only assertion with full_activation and stable-gate assertions?"
       route: windows_arbitrator
       model: gpt-5.6-sol
       model_reasoning_effort: xhigh
-      human_input_required: null
-      confidence: null
+      human_input_required: false
+      confidence: high
       architecture_boundary: "W11-002 owns os_zoom import-time platform segregation only; W11-004 retains runtime capability, CLI ordering, injection, and lifecycle ownership."
       dependency_dag_change: none
       history:
         - decision: targeted_repair
           reason: "Windows import and CLI acceptance reached the top-level Quartz import in os_zoom.py outside the original W11-002 touch set."
           touch_set_added: src/obs_voice_command/os_zoom.py
+          human_input_required: false
+          confidence: high
+        - decision: targeted_repair
+          reason: "The W11-001 bootstrap-only workflow assertion became stale when W11-002 activated the canonical full Layer A stage."
+          touch_set_added: tests/test_model_routing.py
+          test_evolution: "Preserve workflow safety and stable-gate assertions while replacing bootstrap-only assertions with full_activation and frozen-install assertions."
           human_input_required: false
           confidence: high
     retry:
@@ -472,6 +478,7 @@ tickets:
       - src/obs_voice_command/platform/**
       - tests/test_mouse.py
       - tests/test_platform*.py
+      - tests/test_model_routing.py
   - id: W11-003
     epic: E1
     title: Windows pointer and display backend
