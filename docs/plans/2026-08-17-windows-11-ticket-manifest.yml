@@ -432,7 +432,7 @@ tickets:
   - id: W11-002
     epic: E1
     title: Platform boundary and conditional dependencies
-    status: PR
+    status: Doing
     completion_profile: layer_a_post_merge
     ci_stage: full_activation
     execution:
@@ -462,12 +462,12 @@ tickets:
           human_input_required: false
           confidence: high
     retry:
-      state: none
-      consecutive_code_failures: 0
-      total_code_failures: 0
-      repair_ticket: null
-      last_failed_layer: null
-      last_failed_run: null
+      state: worker_repair_1
+      consecutive_code_failures: 1
+      total_code_failures: 1
+      repair_ticket: https://github.com/Wells-Huang/obs-voice-command-windows/issues/4
+      last_failed_layer: layer-a / windows-unit and package
+      last_failed_run: https://github.com/Wells-Huang/obs-voice-command-windows/actions/runs/32473488922
     depends_on: [W11-001]
     touch_set:
       - pyproject.toml
