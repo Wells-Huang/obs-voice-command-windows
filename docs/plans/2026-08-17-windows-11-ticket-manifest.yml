@@ -225,7 +225,8 @@ completion_profiles:
       - active_zero_bypass_pull_request_rule
       - zero_required_human_reviews_for_unattended
       - required_gate_success_on_exact_head_sha
-      - github_squash_auto_merge
+      - github_squash_auto_merge_executed_by_github_after_branch_rules_satisfied
+    auto_merge_enrollment_alone_is_completion_evidence: false
     done_requires:
       - trusted_ci_push_run_success_on_exact_merged_develop_sha
     temporary_provider: .github/workflows/ci.yml
@@ -235,7 +236,8 @@ completion_profiles:
       - active_zero_bypass_pull_request_rule
       - zero_required_human_reviews_for_unattended
       - required_gate_success_on_exact_head_sha
-      - github_squash_auto_merge
+      - github_squash_auto_merge_executed_by_github_after_branch_rules_satisfied
+    auto_merge_enrollment_alone_is_completion_evidence: false
     done_requires:
       - trusted_post_merge_run_success_on_exact_merged_develop_sha
       - repair_deduplication_active
@@ -261,7 +263,14 @@ quality_gates:
       - layer-a / macos-regression
       - layer-a / package
     aggregate_check: required / gate
-    auto_merge_requires: all_required_checks_success
+    auto_merge_enrollment:
+      actor: orchestrator_only
+      allowed_required_check_states: [queued, pending, in_progress]
+      exact_head_sha_required: true
+      authentic_github_actions_suite_required: true
+      active_zero_bypass_rule_required: true
+      forbidden_required_check_states: [failure, cancelled, stale]
+    merge_execution_requires: all_required_checks_success_on_exact_head
     bootstrap_stage:
       owner: W11-001
       scope: [dependency_lazy_obs_probe, model_routing_validator, manifest, planning_artifacts]
@@ -345,7 +354,11 @@ orchestrator_rules:
   block_overlapping_touch_sets: true
   done_requires_selected_completion_profile_pass: true
   repair_on_post_merge_failure: true
-  auto_merge_only_after_required_checks: true
+  auto_merge_enrollment_allowed_while_required_checks_pending: true
+  auto_merge_enrollment_requires_exact_head_and_active_zero_bypass_rule: true
+  auto_merge_execution_only_after_required_checks_success_on_exact_head: true
+  auto_merge_enrollment_is_not_merge_authority: true
+  artificial_pending_state_forbidden: true
   never_bypass_branch_protection: true
   direct_push_to_develop_forbidden: true
   empty_origin_seed_exception:
@@ -543,14 +556,14 @@ tickets:
   - id: W11-005
     epic: E4
     title: Full Layer A required-gate hardening
-    status: Blocked
+    status: PR
     completion_profile: layer_a_post_merge
     ci_stage: full
     arbitration:
-      state: requested
-      reason: "The exact cleanup head passed every required check, but GitHub rejected enablePullRequestAutoMerge with UNPROCESSABLE because the pull request is already clean. Direct merge is forbidden, while enabling auto-merge on a pending head would conflict with the current wording that auto-merge may be enabled only after all checks succeed."
-      decision: null
-      decision_question: "Should repository policy be narrowly changed to permit enabling GitHub auto-merge while the latest head's required checks are pending, provided GitHub itself performs the merge only after all required checks succeed, or is there a compliant clean-head mechanism that avoids direct merge and artificial protection changes?"
+      state: resolved
+      reason: "Repository policy conflated auto-merge enrollment with merge execution, and GitHub rejects auto-merge enrollment with UNPROCESSABLE on an already-clean zero-review pull request."
+      decision: targeted_repair
+      decision_question: "May the orchestrator enroll the verified exact head while checks are pending, with GitHub retaining sole protected merge execution after all required checks succeed?"
       profile: arbitrator
       route: windows_arbitrator
       model: gpt-5.6-sol
@@ -570,7 +583,7 @@ tickets:
       last_failed_layer: github-actions / workflow-schema
       last_failed_run: https://github.com/Wells-Huang/obs-voice-command-windows/commit/e9886891d788c907eb8121ea754ef51405092fd5/checks?check_suite_id=88467551252
     gate_probe_evidence:
-      status: cleanup_pending_ci
+      status: cleanup_remote_ci_success
       baseline_head_sha: c716ff0e66feda6e43f1aafc4365517b0429a559
       baseline_workflow_run: https://github.com/Wells-Huang/obs-voice-command-windows/actions/runs/32650367032
       baseline_workflow_run_id: 32650367032
@@ -598,8 +611,29 @@ tickets:
       cleanup_local_tests: "50 passed, 3 skipped"
       cleanup_semantic_yaml: success
       cleanup_lock_check: success
+      cleanup_remote_head_sha: f3ab1e4e924307d56d7004039f45150b2d700dff
+      cleanup_workflow_run: https://github.com/Wells-Huang/obs-voice-command-windows/actions/runs/32651497711
+      cleanup_workflow_run_id: 32651497711
+      cleanup_remote_windows_unit: success
+      cleanup_remote_macos_regression: success
+      cleanup_remote_package: success
+      cleanup_remote_required_gate: success
+      cleanup_windows_test_summary: "50 passed, 3 skipped"
+      cleanup_required_gate_dependency_result: "platform_matrix=success, package=success"
+    auto_merge_attempt_evidence:
+      head_sha: f3ab1e4e924307d56d7004039f45150b2d700dff
+      workflow_run: https://github.com/Wells-Huang/obs-voice-command-windows/actions/runs/32651497711
+      workflow_run_id: 32651497711
+      clean_status: true
+      enable_result: UNPROCESSABLE
+      classification: policy_semantics
+      direct_merge_attempted: false
+      bypass_used: false
+      consume_code_retry_budget: false
     depends_on: [W11-002]
     touch_set:
+      - AGENTS.md
+      - WORKFLOW.md
       - uv.lock
       - .github/workflows/ci.yml
       - tests/test_model_routing.py

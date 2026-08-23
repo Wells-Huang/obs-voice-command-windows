@@ -49,7 +49,8 @@ The parent task may be set to Luna without weakening arbitration. The route's cu
 
 - A worker must never merge its own pull request, use an admin bypass, disable a check, or weaken a test to obtain a pass.
 - Local tests are evidence, not merge authority.
-- GitHub may auto-merge only after every required pre-merge status check has succeeded on the latest pull-request commit.
+- Only the orchestrator may enroll the verified latest pull-request head in GitHub squash auto-merge while required checks for that exact head are queued, pending, or in progress, provided the pull request is open and unmerged against develop, an authentic GitHub Actions suite exists for that head, the active zero-bypass rule still requires required / gate, and no required check is failed, cancelled, or stale. Enrollment only schedules GitHub's protected merge; GitHub may execute the merge only after every required pre-merge check has succeeded on that exact head and every branch rule is satisfied. Direct, manual, REST, admin, and bypass merges remain forbidden.
+- Any head change invalidates the prior enrollment evidence. Revalidate the new exact head and its protected pending checks before enrollment, and do not push further commits after enrollment.
 - The stable branch-protection check is `required / gate`. It must aggregate every Layer A required job and fail if any required job fails or is cancelled.
 - `continue-on-error` is forbidden for required checks.
 - A pull request with a failing, missing, stale, or cancelled required check remains in `PR` or returns to `Doing`.

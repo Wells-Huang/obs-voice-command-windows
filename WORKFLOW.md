@@ -116,7 +116,8 @@ Layer A always gates GitHub auto-merge. Layer B is never required for a ticket t
 - Protect `develop` with pull requests and required check `required / gate`.
 - Require the latest pull-request commit to have current checks.
 - Do not permit admin bypass, force push, or direct worker merge.
-- GitHub auto-merge may proceed only after the required gate and any configured review/conversation rules pass.
+- Auto-merge enrollment and merge execution are distinct. The orchestrator may enroll the verified exact latest head in squash auto-merge while its required checks are queued, pending, or in progress. GitHub may execute the merge only after required / gate and every configured branch rule succeed on that same exact head; enrollment is neither merge authority nor completion evidence.
+- If GitHub rejects auto-merge enrollment because the pull request is already clean, do not directly merge, weaken protection, add an artificial review requirement, manufacture a failing check, or create an empty/no-op commit. If a genuine in-scope policy, tracker, or evidence correction remains, publish it as the final substantive head and enroll that head while its checks are pending. If no substantive change remains, fail closed and request human direction.
 - W11-001 performs the one-time no-browser bootstrap using an out-of-band, non-interactive repository-administration credential: activate a zero-bypass pull-request rule with zero mandatory human reviews first, open the PR, observe the GitHub Actions check context, add `required / gate` from GitHub Actions to the active rule, verify it, then enable squash auto-merge for the exact PR head.
 - The rule activation timestamp must precede `mergedAt`. After the separately approved and consumed empty-origin baseline seed, direct push, REST merge, manual merge, `--admin`, and every check bypass are forbidden.
 
@@ -193,7 +194,8 @@ After third-failure arbitration, the arbitrator records one of: targeted repair 
 
 ## 6. State transitions
 
-- Layer A PASS: PR may auto-merge when every branch rule is satisfied.
+- Auto-merge enrollment: the orchestrator may enroll the verified exact latest head while required checks are queued, pending, or in progress under the auto-merge contract; enrollment does not merge the pull request and is not completion evidence.
+- Layer A PASS: GitHub may execute the enrolled squash merge only after `required / gate` and every configured branch rule succeed on the same exact head.
 - Layer A FAIL: PR cannot merge; use the retry budget.
 - Merge completed: Ticket becomes `Merged`, never immediately `Done`.
 - Trusted post-merge Layer A PASS on the exact merged SHA: a `layer_a_post_merge` or `layer_a_post_merge_automated` ticket becomes `Done`.
