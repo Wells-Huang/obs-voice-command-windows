@@ -9,6 +9,7 @@ def _run_isolated(code: str):
         [sys.executable, "-c", code],
         capture_output=True,
         text=True,
+        encoding="utf-8",
         check=False,
     )
 

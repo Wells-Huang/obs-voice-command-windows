@@ -6,7 +6,6 @@ WORKFLOW = Path(".github/workflows/ci.yml")
 
 def test_layer_a_runs_locked_windows_and_macos_product_smoke():
     workflow = WORKFLOW.read_text(encoding="utf-8")
-    windows_job = workflow.split("  macos_regression:", 1)[0]
 
     assert "runs-on: windows-latest" in workflow
     assert "runs-on: macos-latest" in workflow
@@ -16,7 +15,22 @@ def test_layer_a_runs_locked_windows_and_macos_product_smoke():
     assert "import obs_voice_command.main" in workflow
     assert "obs-voice-command --help" in workflow
     assert "python -m pytest tests -q" in workflow
-    assert "        env:\n          PYTHONIOENCODING: utf-8\n        run:" in windows_job
+
+
+def test_windows_utf8_output_is_job_scoped_before_smoke_and_tests():
+    workflow = WORKFLOW.read_text(encoding="utf-8")
+    windows_job = workflow.split("  macos_regression:", 1)[0]
+
+    job_env = "    env:\n      PYTHONIOENCODING: utf-8\n    steps:"
+    encoding_index = windows_job.index(job_env)
+    smoke_index = windows_job.index("      - name: Verify Windows imports stay Quartz-free")
+    tests_index = windows_job.index("      - name: Run hardware-free tests")
+
+    assert encoding_index < smoke_index
+    assert encoding_index < tests_index
+    assert windows_job.count("PYTHONIOENCODING: utf-8") == 1
+    assert workflow.count("PYTHONIOENCODING: utf-8") == 1
+    assert "        env:\n          PYTHONIOENCODING: utf-8" not in windows_job
 
 
 def test_package_job_builds_and_imports_the_wheel():
