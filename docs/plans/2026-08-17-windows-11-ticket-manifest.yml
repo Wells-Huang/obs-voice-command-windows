@@ -561,12 +561,23 @@ tickets:
       approved_layout: "platform_matrix emits the stable Windows and macOS check names; package remains separate; required_gate aggregates platform_matrix and package."
       negative_probe: "A predeclared Windows-only W11-005_NEGATIVE_GATE_PROBE commit must fail windows-unit and required / gate without consuming retry, then a cleanup commit restores a fully passing head before auto-merge."
     retry:
-      state: worker_repair_1
-      consecutive_code_failures: 1
+      state: none
+      consecutive_code_failures: 0
       total_code_failures: 1
       repair_ticket: https://github.com/Wells-Huang/obs-voice-command-windows/issues/6
       last_failed_layer: github-actions / workflow-schema
       last_failed_run: https://github.com/Wells-Huang/obs-voice-command-windows/commit/e9886891d788c907eb8121ea754ef51405092fd5/checks?check_suite_id=88467551252
+    gate_probe_evidence:
+      status: baseline_passed
+      baseline_head_sha: c716ff0e66feda6e43f1aafc4365517b0429a559
+      baseline_workflow_run: https://github.com/Wells-Huang/obs-voice-command-windows/actions/runs/32650367032
+      baseline_workflow_run_id: 32650367032
+      baseline_windows_unit: success
+      baseline_macos_regression: success
+      baseline_package: success
+      baseline_required_gate: success
+      probe_marker: W11-005_NEGATIVE_GATE_PROBE
+      consume_code_retry_budget: false
     depends_on: [W11-002]
     touch_set:
       - uv.lock
