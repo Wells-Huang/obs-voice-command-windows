@@ -1,59 +1,34 @@
-"""真 macOS 螢幕縮放（輔助使用 Zoom）：合成 Opt+Cmd 快捷鍵。
+"""Import-safe compatibility facade for the macOS Accessibility Zoom helper."""
+from __future__ import annotations
 
-需要「系統設定 → 輔助使用 → 縮放 → 使用鍵盤快速鍵來縮放」開啟，
-且執行本程式的終端機要有輔助使用權限。
+import sys
+from types import ModuleType
 
-機制：鍵盤縮放是在 far point (1x) 與 near point 之間切換，
-跳躍目標存於 closeViewNearPoint（寫入即時生效，經實測）。
-兩個方向都用 Opt+Cmd+8（toggle）觸發：toggle 帶平滑過場動畫，
-而 Opt+Cmd+= 是步進鍵、瞬跳無動畫。zoom_in = 先把 near point 寫成
-目標倍率再 toggle；zoom_out = 再 toggle 一次。
-目前縮放狀態可從 closeViewZoomedIn 讀取（idle 時準確）。
-"""
-import subprocess
-import time
-
-import Quartz
-
-_KEY_EQUAL = 24   # kVK_ANSI_Equal
-_KEY_TOGGLE = 28  # kVK_ANSI_8
-_CMD_OPT = Quartz.kCGEventFlagMaskCommand | Quartz.kCGEventFlagMaskAlternate
-_DOMAIN = "com.apple.universalaccess"
+from .platform import UnsupportedPlatformError
 
 
-def _key(code: int) -> None:
-    for down in (True, False):
-        ev = Quartz.CGEventCreateKeyboardEvent(None, code, down)
-        Quartz.CGEventSetFlags(ev, _CMD_OPT)
-        Quartz.CGEventPost(Quartz.kCGHIDEventTap, ev)
-        time.sleep(0.05)
+def _macos_adapter() -> ModuleType:
+    if sys.platform != "darwin":
+        raise UnsupportedPlatformError(
+            f"OS zoom is available only on macOS; current platform is {sys.platform!r}"
+        )
 
+    # Quartz remains lazy so importing the CLI is safe on every platform.
+    from .platform import macos_os_zoom
 
-def _read(key: str, default: float = 0.0) -> float:
-    r = subprocess.run(
-        ["defaults", "read", _DOMAIN, key], capture_output=True, text=True
-    )
-    try:
-        return float(r.stdout.strip())
-    except ValueError:
-        return default
+    return macos_os_zoom
 
 
 def is_zoomed() -> bool:
-    return _read("closeViewZoomedIn") >= 1.0
+    """Return whether macOS Accessibility Zoom is currently active."""
+    return _macos_adapter().is_zoomed()
 
 
 def zoom_in(target: float = 1.5) -> None:
-    """設定 near point 後按 toggle，平滑動畫躍到 target。已縮放則冪等跳過。"""
-    if is_zoomed():
-        return
-    for key in ("closeViewNearPoint", "closeViewDesiredZoomFactor"):
-        subprocess.run(["defaults", "write", _DOMAIN, key, "-float", str(target)])
-    time.sleep(0.2)  # 等 cfprefs 落盤
-    _key(_KEY_TOGGLE)
+    """Zoom in through the existing macOS Accessibility Zoom behavior."""
+    _macos_adapter().zoom_in(target=target)
 
 
 def zoom_out() -> None:
-    """Opt+Cmd+8 動畫退回 1x。未縮放則冪等跳過（避免 toggle 反向放大）。"""
-    if is_zoomed():
-        _key(_KEY_TOGGLE)
+    """Zoom out through the existing macOS Accessibility Zoom behavior."""
+    _macos_adapter().zoom_out()
