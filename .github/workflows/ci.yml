@@ -132,13 +132,6 @@ jobs:
         shell: bash
         run: uv run --frozen python -m pytest tests -q
 
-      - name: Planned W11-005 negative required-gate probe
-        if: ${{ matrix.platform == 'windows' }}
-        shell: pwsh
-        run: |
-          Write-Host 'W11-005_NEGATIVE_GATE_PROBE'
-          exit 1
-
   package:
     name: layer-a / package
     runs-on: ubuntu-latest
