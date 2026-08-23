@@ -568,7 +568,7 @@ tickets:
       last_failed_layer: github-actions / workflow-schema
       last_failed_run: https://github.com/Wells-Huang/obs-voice-command-windows/commit/e9886891d788c907eb8121ea754ef51405092fd5/checks?check_suite_id=88467551252
     gate_probe_evidence:
-      status: baseline_passed
+      status: expected_failure_verified
       baseline_head_sha: c716ff0e66feda6e43f1aafc4365517b0429a559
       baseline_workflow_run: https://github.com/Wells-Huang/obs-voice-command-windows/actions/runs/32650367032
       baseline_workflow_run_id: 32650367032
@@ -576,7 +576,20 @@ tickets:
       baseline_macos_regression: success
       baseline_package: success
       baseline_required_gate: success
+      temporary_commit_sha: 05b79d2a31b4434e58dbfc9d7b3f029c74e83900
+      failing_workflow_run: https://github.com/Wells-Huang/obs-voice-command-windows/actions/runs/32650629191
+      failing_workflow_run_id: 32650629191
+      provider: github-actions
+      expected_failed_job: layer-a / windows-unit
+      windows_normal_tests: success
+      windows_probe_step: failure
       probe_marker: W11-005_NEGATIVE_GATE_PROBE
+      macos_regression: success
+      package: success
+      required_gate_conclusion: failure
+      required_gate_dependency_result: "platform_matrix=failure, package=success"
+      merge_occurred: false
+      bypass_used: false
       consume_code_retry_budget: false
     depends_on: [W11-002]
     touch_set:
