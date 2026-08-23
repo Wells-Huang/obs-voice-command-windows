@@ -556,14 +556,14 @@ tickets:
   - id: W11-005
     epic: E4
     title: Full Layer A required-gate hardening
-    status: Blocked
+    status: PR
     completion_profile: layer_a_post_merge
     ci_stage: full
     arbitration:
-      state: requested
-      reason: "The directed policy repair produced a genuine final head and an authentic GitHub Actions suite, but required / gate completed during the read-only pre-enrollment checks; GitHub again rejected enrollment with UNPROCESSABLE clean status despite the gate being observed queued immediately before the call."
-      decision: null
-      decision_question: "May the orchestrator publish this new evidence-only tracker correction as the final substantive head, pre-verify the unchanged zero-bypass ruleset before push, and enroll via the existing non-interactive GitHub GraphQL credential immediately after the exact-head Actions suite appears, without waiting for individual job enumeration?"
+      state: resolved
+      reason: "Post-push ruleset and job enumeration allowed required / gate to complete before enrollment; a fresh pre-push ruleset snapshot plus immediate exact-head check-rollup enrollment is safe because the branch push does not mutate repository settings."
+      decision: targeted_repair
+      decision_question: "May the orchestrator pre-verify the unchanged zero-bypass ruleset immediately before push, then enroll the exact final head as soon as its authentic GitHub Actions rollup is pending without waiting for individual job enumeration?"
       profile: arbitrator
       route: windows_arbitrator
       model: gpt-5.6-sol
@@ -639,6 +639,13 @@ tickets:
       second_direct_merge_attempted: false
       second_bypass_used: false
       second_consume_code_retry_budget: false
+    enrollment_strategy:
+      ruleset_verification_timing: immediately_before_push
+      ruleset_snapshot_scope: same_uninterrupted_attempt
+      post_push_slow_ruleset_reread_required: false
+      post_push_required_read: exact_pr_head_and_authentic_actions_rollup
+      wait_for_individual_jobs: false
+      mutation: enablePullRequestAutoMerge_SQUASH
     depends_on: [W11-002]
     touch_set:
       - AGENTS.md
