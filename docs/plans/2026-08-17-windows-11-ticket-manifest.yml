@@ -543,14 +543,14 @@ tickets:
   - id: W11-005
     epic: E4
     title: Full Layer A required-gate hardening
-    status: PR
+    status: Blocked
     completion_profile: layer_a_post_merge
     ci_stage: full
     arbitration:
-      state: resolved
-      reason: "W11-005 owns the intentional transition to ci_stage=full, while two W11-002 executable contract tests encode the transitional stage and separate-job layout outside the original touch set."
-      decision: targeted_repair
-      decision_question: "Should W11-005 add tests/test_model_routing.py and tests/test_platform_ci.py to its touch set and evolve only the stale stage/matrix/gate assertions while preserving all fail-closed safety checks?"
+      state: requested
+      reason: "The exact cleanup head passed every required check, but GitHub rejected enablePullRequestAutoMerge with UNPROCESSABLE because the pull request is already clean. Direct merge is forbidden, while enabling auto-merge on a pending head would conflict with the current wording that auto-merge may be enabled only after all checks succeed."
+      decision: null
+      decision_question: "Should repository policy be narrowly changed to permit enabling GitHub auto-merge while the latest head's required checks are pending, provided GitHub itself performs the merge only after all required checks succeed, or is there a compliant clean-head mechanism that avoids direct merge and artificial protection changes?"
       profile: arbitrator
       route: windows_arbitrator
       model: gpt-5.6-sol
@@ -558,6 +558,8 @@ tickets:
       human_input_required: false
       confidence: high
       dependency_dag_change: none
+      prior_decision: targeted_repair
+      prior_reason: "W11-005 owns the intentional transition to ci_stage=full, while two W11-002 executable contract tests encode the transitional stage and separate-job layout outside the original touch set."
       approved_layout: "platform_matrix emits the stable Windows and macOS check names; package remains separate; required_gate aggregates platform_matrix and package."
       negative_probe: "A predeclared Windows-only W11-005_NEGATIVE_GATE_PROBE commit must fail windows-unit and required / gate without consuming retry, then a cleanup commit restores a fully passing head before auto-merge."
     retry:
