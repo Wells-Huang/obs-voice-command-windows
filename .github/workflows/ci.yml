@@ -26,13 +26,11 @@ jobs:
             python: '3.12'
             check_name: layer-a / windows-unit
             platform: windows
-            shell: pwsh
             python_io_encoding: utf-8
           - os: macos-latest
             python: '3.12'
             check_name: layer-a / macos-regression
             platform: macos
-            shell: bash
             python_io_encoding: ''
     env:
       PYTHONIOENCODING: ${{ matrix.python_io_encoding }}
@@ -85,7 +83,6 @@ jobs:
           printf '%s\n' 'ci_stage=full' 'platform=macos' 'runner_os=macOS' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Install locked uv version
-        shell: ${{ matrix.shell }}
         run: python -m pip install --disable-pip-version-check "uv==${{ env.UV_VERSION }}"
 
       - name: Log Windows CI context
@@ -109,7 +106,6 @@ jobs:
           printf '%s\n' "runner_os=$RUNNER_OS" 'platform=macos' "python_version=$python_version" "uv_version=$uv_version" "ci_stage=$CI_STAGE"
 
       - name: Install locked project
-        shell: ${{ matrix.shell }}
         run: uv sync --frozen
 
       - name: Verify Windows imports stay Quartz-free

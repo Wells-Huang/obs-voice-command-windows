@@ -19,6 +19,7 @@ def test_layer_a_runs_locked_windows_and_macos_product_smoke():
     assert "os: macos-latest" in matrix_job
     assert "check_name: layer-a / macos-regression" in matrix_job
     assert "python-version: ${{ matrix.python }}" in matrix_job
+    assert "shell: ${{" not in workflow
     assert "  windows_unit:" not in workflow
     assert "  macos_regression:" not in workflow
     assert matrix_job.count("uv sync --frozen") == 1
