@@ -11,15 +11,31 @@ permissions:
   contents: read
 
 env:
-  CI_STAGE: full_activation
+  CI_STAGE: full
   UV_VERSION: '0.11.8'
 
 jobs:
-  windows_unit:
-    name: layer-a / windows-unit
-    runs-on: windows-latest
+  platform_matrix:
+    name: ${{ matrix.check_name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            python: '3.12'
+            check_name: layer-a / windows-unit
+            platform: windows
+            shell: pwsh
+            python_io_encoding: utf-8
+          - os: macos-latest
+            python: '3.12'
+            check_name: layer-a / macos-regression
+            platform: macos
+            shell: bash
+            python_io_encoding: ''
     env:
-      PYTHONIOENCODING: utf-8
+      PYTHONIOENCODING: ${{ matrix.python_io_encoding }}
     steps:
       - name: Check out repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -29,72 +45,94 @@ jobs:
       - name: Select Python
         uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
         with:
-          python-version: '3.12'
+          python-version: ${{ matrix.python }}
 
-      - name: Require full activation stage
+      - name: Platform guard (Windows)
+        if: ${{ matrix.platform == 'windows' }}
         shell: pwsh
         run: |
-          if ($env:CI_STAGE -ne 'full_activation') {
-            throw "Expected ci_stage=full_activation, got ci_stage=$env:CI_STAGE"
+          if ($env:CI_STAGE -ne 'full') {
+            throw "Expected ci_stage=full, got ci_stage=$env:CI_STAGE"
           }
-          Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Value 'ci_stage=full_activation' -Encoding utf8
+          if ($env:RUNNER_OS -ne 'Windows') {
+            throw "Expected Windows runner, got runner_os=$env:RUNNER_OS"
+          }
+          if ($env:PYTHONIOENCODING -ne 'utf-8') {
+            throw "Expected Windows PYTHONIOENCODING=utf-8"
+          }
+          Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Value @(
+            'ci_stage=full'
+            'platform=windows'
+            'runner_os=Windows'
+          ) -Encoding utf8
+
+      - name: Platform guard (macOS)
+        if: ${{ matrix.platform == 'macos' }}
+        shell: bash
+        run: |
+          if [[ "$CI_STAGE" != "full" ]]; then
+            echo "Expected ci_stage=full, got ci_stage=$CI_STAGE" >&2
+            exit 1
+          fi
+          if [[ "$RUNNER_OS" != "macOS" ]]; then
+            echo "Expected macOS runner, got runner_os=$RUNNER_OS" >&2
+            exit 1
+          fi
+          if [[ "${PYTHONIOENCODING:-}" == "utf-8" ]]; then
+            echo 'macOS must not inherit the Windows UTF-8 job setting' >&2
+            exit 1
+          fi
+          printf '%s\n' 'ci_stage=full' 'platform=macos' 'runner_os=macOS' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Install locked uv version
+        shell: ${{ matrix.shell }}
+        run: python -m pip install --disable-pip-version-check "uv==${{ env.UV_VERSION }}"
+
+      - name: Log Windows CI context
+        if: ${{ matrix.platform == 'windows' }}
         shell: pwsh
-        run: python -m pip install --disable-pip-version-check "uv==$env:UV_VERSION"
+        run: |
+          $pythonVersion = python --version
+          $uvVersion = uv --version
+          Write-Host "runner_os=$env:RUNNER_OS"
+          Write-Host 'platform=windows'
+          Write-Host "python_version=$pythonVersion"
+          Write-Host "uv_version=$uvVersion"
+          Write-Host "ci_stage=$env:CI_STAGE"
+
+      - name: Log macOS CI context
+        if: ${{ matrix.platform == 'macos' }}
+        shell: bash
+        run: |
+          python_version="$(python --version)"
+          uv_version="$(uv --version)"
+          printf '%s\n' "runner_os=$RUNNER_OS" 'platform=macos' "python_version=$python_version" "uv_version=$uv_version" "ci_stage=$CI_STAGE"
 
       - name: Install locked project
-        shell: pwsh
+        shell: ${{ matrix.shell }}
         run: uv sync --frozen
 
       - name: Verify Windows imports stay Quartz-free
+        if: ${{ matrix.platform == 'windows' }}
         shell: pwsh
         run: |
           uv run --frozen python -c "import sys; import obs_voice_command.os_zoom; import obs_voice_command.main; assert 'Quartz' not in sys.modules; print('Windows import smoke: PASS')"
           uv run --frozen obs-voice-command --help
 
-      - name: Run hardware-free tests
-        shell: pwsh
-        run: uv run --frozen python -m pytest tests -q
-
-  macos_regression:
-    name: layer-a / macos-regression
-    runs-on: macos-latest
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          persist-credentials: false
-
-      - name: Select Python
-        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
-        with:
-          python-version: '3.12'
-
-      - name: Require full activation stage
-        shell: bash
-        run: |
-          if [[ "$CI_STAGE" != "full_activation" ]]; then
-            echo "Expected ci_stage=full_activation, got ci_stage=$CI_STAGE" >&2
-            exit 1
-          fi
-          printf '%s\n' 'ci_stage=full_activation' >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Install locked uv version
-        shell: bash
-        run: python -m pip install --disable-pip-version-check "uv==$UV_VERSION"
-
-      - name: Install locked project
-        shell: bash
-        run: uv sync --frozen
-
       - name: Verify macOS imports and CLI
+        if: ${{ matrix.platform == 'macos' }}
         shell: bash
         run: |
           uv run --frozen python -c "import obs_voice_command.os_zoom; import obs_voice_command.main; print('macOS import smoke: PASS')"
           uv run --frozen obs-voice-command --help
 
+      - name: Run Windows hardware-free tests
+        if: ${{ matrix.platform == 'windows' }}
+        shell: pwsh
+        run: uv run --frozen python -m pytest tests -q
+
       - name: Run macOS regression tests
+        if: ${{ matrix.platform == 'macos' }}
         shell: bash
         run: uv run --frozen python -m pytest tests -q
 
@@ -112,18 +150,25 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Require full activation stage
+      - name: Require full stage
         shell: bash
         run: |
-          if [[ "$CI_STAGE" != "full_activation" ]]; then
-            echo "Expected ci_stage=full_activation, got ci_stage=$CI_STAGE" >&2
+          if [[ "$CI_STAGE" != "full" ]]; then
+            echo "Expected ci_stage=full, got ci_stage=$CI_STAGE" >&2
             exit 1
           fi
-          printf '%s\n' 'ci_stage=full_activation' >> "$GITHUB_STEP_SUMMARY"
+          printf '%s\n' 'ci_stage=full' 'platform=package' "runner_os=$RUNNER_OS" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Install locked uv version
         shell: bash
         run: python -m pip install --disable-pip-version-check "uv==$UV_VERSION"
+
+      - name: Log package CI context
+        shell: bash
+        run: |
+          python_version="$(python --version)"
+          uv_version="$(uv --version)"
+          printf '%s\n' "runner_os=$RUNNER_OS" 'platform=package' "python_version=$python_version" "uv_version=$uv_version" "ci_stage=$CI_STAGE"
 
       - name: Install locked project
         shell: bash
@@ -174,23 +219,22 @@ jobs:
     name: required / gate
     runs-on: ubuntu-latest
     if: ${{ always() }}
-    needs: [windows_unit, macos_regression, package]
+    needs: [platform_matrix, package]
     steps:
-      - name: Require full activation and every Layer A job
+      - name: Require full stage and every Layer A job
         shell: bash
         env:
-          WINDOWS_UNIT_RESULT: ${{ needs.windows_unit.result }}
-          MACOS_REGRESSION_RESULT: ${{ needs.macos_regression.result }}
+          PLATFORM_MATRIX_RESULT: ${{ needs.platform_matrix.result }}
           PACKAGE_RESULT: ${{ needs.package.result }}
         run: |
           printf '%s\n' "ci_stage=$CI_STAGE" >> "$GITHUB_STEP_SUMMARY"
-          printf 'windows_unit=%s\nmacos_regression=%s\npackage=%s\n' "$WINDOWS_UNIT_RESULT" "$MACOS_REGRESSION_RESULT" "$PACKAGE_RESULT" >> "$GITHUB_STEP_SUMMARY"
-          if [[ "$CI_STAGE" != "full_activation" ]]; then
-            echo "required / gate: FAIL (expected ci_stage=full_activation, got ci_stage=$CI_STAGE)" >&2
+          printf 'platform_matrix=%s\npackage=%s\n' "$PLATFORM_MATRIX_RESULT" "$PACKAGE_RESULT" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$CI_STAGE" != "full" ]]; then
+            echo "required / gate: FAIL (expected ci_stage=full, got ci_stage=$CI_STAGE)" >&2
             exit 1
           fi
-          if [[ "$WINDOWS_UNIT_RESULT" != "success" || "$MACOS_REGRESSION_RESULT" != "success" || "$PACKAGE_RESULT" != "success" ]]; then
-            echo 'required / gate: FAIL (every required Layer A job must report success)' >&2
+          if [[ "$PLATFORM_MATRIX_RESULT" != "success" || "$PACKAGE_RESULT" != "success" ]]; then
+            echo 'required / gate: FAIL (platform matrix and package must report success)' >&2
             exit 1
           fi
-          echo 'required / gate: PASS (full activation and every required Layer A job succeeded)' >> "$GITHUB_STEP_SUMMARY"
+          echo 'required / gate: PASS (full Layer A matrix and package succeeded)' >> "$GITHUB_STEP_SUMMARY"
