@@ -568,7 +568,7 @@ tickets:
       last_failed_layer: github-actions / workflow-schema
       last_failed_run: https://github.com/Wells-Huang/obs-voice-command-windows/commit/e9886891d788c907eb8121ea754ef51405092fd5/checks?check_suite_id=88467551252
     gate_probe_evidence:
-      status: expected_failure_verified
+      status: cleanup_pending_ci
       baseline_head_sha: c716ff0e66feda6e43f1aafc4365517b0429a559
       baseline_workflow_run: https://github.com/Wells-Huang/obs-voice-command-windows/actions/runs/32650367032
       baseline_workflow_run_id: 32650367032
@@ -591,6 +591,11 @@ tickets:
       merge_occurred: false
       bypass_used: false
       consume_code_retry_budget: false
+      cleanup_commit_sha: b4495d4401d8d2d586e342da1ae45488407b7c5c
+      cleanup_exact_reverse: true
+      cleanup_local_tests: "50 passed, 3 skipped"
+      cleanup_semantic_yaml: success
+      cleanup_lock_check: success
     depends_on: [W11-002]
     touch_set:
       - uv.lock
