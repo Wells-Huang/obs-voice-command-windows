@@ -432,7 +432,7 @@ tickets:
   - id: W11-002
     epic: E1
     title: Platform boundary and conditional dependencies
-    status: PR
+    status: Done
     completion_profile: layer_a_post_merge
     ci_stage: full_activation
     execution:
@@ -462,12 +462,27 @@ tickets:
           human_input_required: false
           confidence: high
     retry:
-      state: worker_repair_2
-      consecutive_code_failures: 2
+      state: none
+      consecutive_code_failures: 0
       total_code_failures: 2
       repair_ticket: https://github.com/Wells-Huang/obs-voice-command-windows/issues/4
       last_failed_layer: layer-a / windows-unit
       last_failed_run: https://github.com/Wells-Huang/obs-voice-command-windows/actions/runs/32474948657
+    completion_evidence:
+      pull_request: https://github.com/Wells-Huang/obs-voice-command-windows/pull/3
+      pull_request_head_sha: f281a78a4a0bbf38a21a1bb765b12c95b9acfbfc
+      pre_merge_workflow_run: https://github.com/Wells-Huang/obs-voice-command-windows/actions/runs/32648307164
+      pre_merge_workflow_run_id: 32648307164
+      pre_merge_workflow_run_attempt: 1
+      pre_merge_required_gate: success
+      auto_merge_method: squash
+      merged_develop_sha: 01f23d3c182b33f9631684cc507371638a91fff0
+      merged_at: "2026-08-23T15:22:21Z"
+      post_merge_workflow_run: https://github.com/Wells-Huang/obs-voice-command-windows/actions/runs/32648343589
+      post_merge_workflow_run_id: 32648343589
+      post_merge_event: push
+      post_merge_required_gate: success
+      layer_b_required: false
     depends_on: [W11-001]
     touch_set:
       - pyproject.toml
@@ -528,7 +543,7 @@ tickets:
   - id: W11-005
     epic: E4
     title: Full Layer A required-gate hardening
-    status: Blocked
+    status: Ready
     completion_profile: layer_a_post_merge
     ci_stage: full
     arbitration:
