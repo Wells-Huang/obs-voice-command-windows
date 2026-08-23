@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 
@@ -5,11 +6,15 @@ import pytest
 
 
 def _run_isolated(code: str):
+    child_env = os.environ.copy()
+    child_env["PYTHONIOENCODING"] = "utf-8"
+
     return subprocess.run(
         [sys.executable, "-c", code],
         capture_output=True,
         text=True,
         encoding="utf-8",
+        env=child_env,
         check=False,
     )
 
