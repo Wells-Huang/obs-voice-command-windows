@@ -11,7 +11,7 @@ flowchart TD
     Controller["Parent coordination controller"] --> Preflight["Validate manifest and .codex routing"]
     Preflight -->|PASS + Ready ticket| Worker["windows_worker: gpt-5.6-luna / max"]
     Worker -->|success| CI["PR and required checks"]
-    Worker -->|escalation or third failure| Arb["windows_arbitrator: gpt-5.6-sol / xhigh"]
+    Worker -->|escalation or third failure| Arb["windows_arbitrator: gpt-6-astra / medium"]
     Arb --> Decision["Structured arbitration decision"]
     Decision -->|targeted repair| Worker
     Decision -->|needs human| Stop["Blocked + human action"]
@@ -31,7 +31,7 @@ Routing rules:
 
 ## 1. Empty-origin initialization gate
 
-The Windows delivery repository is `origin=https://github.com/Wells-Huang/obs-voice-command-windows.git`; the original project is retained as `upstream=https://github.com/htlin222/obs-voice-command.git`. The approved empty-origin seed has created the sole baseline ref `refs/heads/develop` at `de6c588f981596ed13bc9cd0254ad4989a2686b3`, and `develop` is the default branch.
+The Windows delivery repository is `origin=https://github.com/Wells-sideproj/obs-voice-command-windows.git`; the original project is retained as `upstream=https://github.com/htlin222/obs-voice-command.git`. The approved empty-origin seed has created the sole baseline ref `refs/heads/develop` at `de6c588f981596ed13bc9cd0254ad4989a2686b3`, and `develop` is the default branch. The repository is public and owned by the GitHub Free Organization `Wells-sideproj`.
 
 `empty_origin_baseline_seed` was the external non-code predecessor of W11-001 and is now `policy_verified`:
 
@@ -46,7 +46,7 @@ The Windows delivery repository is `origin=https://github.com/Wells-Huang/obs-vo
    `--force`, `--mirror`, `--all`, tags, a local branch as source, any other ref/SHA, and every second direct push are forbidden. The full-OID source guarantees that current uncommitted planning/probe files are excluded.
 4. Verify origin now has exactly `refs/heads/develop` at the pinned SHA; set/confirm `develop` as default; enable squash merge and repository auto-merge, disable merge commits/rebase merges, and enable head-branch deletion.
 5. Before any W11 branch is pushed, install and read back an active ruleset targeting exactly `refs/heads/develop`: empty bypass list, pull requests required, zero mandatory reviews, linear history, deletion blocked, and non-fast-forward updates blocked.
-6. The initial rule cannot require `required / gate` before that check context exists. W11-001 introduces the check through its PR; after the authentic GitHub Actions context appears, add it to the active rule with strict updates and verify provider identity before enabling exact-head squash auto-merge.
+6. The initial rule cannot require `required / gate` before that check context exists. W11-001 introduces the check through its PR; after the authentic GitHub Actions context appears, add it to the active rule with strict updates and verify provider identity before the pre-queue exact-head squash auto-merge fallback. That legacy enrollment is superseded once the merge queue is active.
 
 Gate states are `seed_not_written`, `baseline_seeded_policy_incomplete`, `policy_verified`, and `unexpected_remote_state_needs_human`. Failure after a correct seed freezes the public upstream baseline and all further pushes until policy is repaired. Unexpected refs or SHA never trigger automatic force-rewrite, deletion, or repository recreation.
 
@@ -57,8 +57,9 @@ flowchart TD
     PR["Worker PR"] --> A["Layer A: GitHub-hosted required CI"]
     A -->|FAIL| RepairA["Repair budget"]
     RepairA --> PR
-    A -->|required / gate PASS| AutoMerge["GitHub auto-merge"]
-    AutoMerge --> Develop["protected develop"]
+    A -->|green / eligible| Enqueue["Controller enqueues exact PR head"]
+    Enqueue --> Group["Protected merge_group"]
+    Group -->|required / gate PASS| Develop["GitHub protected squash -> develop"]
     Develop --> PushA["Trusted post-merge Layer A on exact SHA"]
     PushA -->|FAIL| RepairA
     PushA --> Profile{"Ticket completion profile"}
@@ -71,11 +72,20 @@ flowchart TD
 
 The manifest assigns one completion profile per ticket:
 
-- `layer_a_post_merge`: W11-001 through W11-009 require pre-merge `required / gate`, GitHub auto-merge of the exact head SHA, and a distinct trusted `ci.yml` push run that succeeds on the exact merged `develop` SHA.
+- `layer_a_post_merge`: W11-001 through W11-009 require pre-merge `required / gate`, GitHub's protected merge-queue squash of the exact head SHA, and a distinct trusted `ci.yml` push run that succeeds on the exact merged `develop` SHA.
 - `layer_a_post_merge_automated`: W11-010 requires the same evidence, but its authoritative post-merge provider is the newly merged `post-merge.yml` automation.
 - `layer_a_plus_layer_b_exact_sha`: W11-011 and W11-012 require authoritative post-merge Layer A plus `windows11-integration / obs-e2e` success and cleanup success on the same exact merged SHA. W11-012 also requires release-readiness evidence.
 
-Layer A always gates GitHub auto-merge. Layer B is never required for a ticket that builds or bootstraps Layer B. A failure affects only the ticket whose completion profile selected that layer and its repair lineage.
+Layer A always gates protected merge-queue execution. The pre-queue exact-head
+GitHub auto-merge path is superseded after queue activation and is valid only as
+the documented legacy fallback before activation. Layer B is never required for
+a ticket that builds or bootstraps Layer B. A failure affects only the ticket
+whose completion profile selected that layer and its repair lineage.
+
+The active queue cutover does not retroactively invalidate W11-001 or W11-002:
+their recorded pre-activation GitHub squash auto-merge evidence remains
+grandfathered historical completion evidence. New tickets must satisfy the
+active merge-queue contract.
 
 ## 3. Layer A — ordinary Windows CI
 
@@ -111,14 +121,22 @@ Layer A always gates GitHub auto-merge. Layer B is never required for a ticket t
 - Through W11-009, the trusted `push` run of `ci.yml` is the temporary post-merge provider. The controller records workflow ID, run URL, check-suite app, merged SHA, and conclusion; only `success` on the exact merged SHA is acceptable.
 - W11-010 makes `post-merge.yml` the authoritative post-merge Layer A provider. This avoids requiring a downstream workflow before the ticket that creates it is complete.
 
-### Auto-merge contract
+### Merge execution contract
 
 - Protect `develop` with pull requests and required check `required / gate`.
 - Require the latest pull-request commit to have current checks.
 - Do not permit admin bypass, force push, or direct worker merge.
-- GitHub auto-merge may proceed only after the required gate and any configured review/conversation rules pass.
-- W11-001 performs the one-time no-browser bootstrap using an out-of-band, non-interactive repository-administration credential: activate a zero-bypass pull-request rule with zero mandatory human reviews first, open the PR, observe the GitHub Actions check context, add `required / gate` from GitHub Actions to the active rule, verify it, then enable squash auto-merge for the exact PR head.
+- With the active merge queue, enrollment and merge execution are distinct. The orchestrator may enqueue the verified exact latest head only after the input schema is checked; GitHub may execute the protected squash only after the queue creates a `merge_group` whose `required / gate` and every configured branch rule succeed on that same head. Enrollment is neither merge authority nor completion evidence.
+- If queue enrollment is rejected, do not directly merge, weaken protection, add an artificial review requirement, manufacture a failing check, or create an empty/no-op commit. If the queue is not yet active, the pre-queue exact-head squash auto-merge is a documented legacy fallback only; once the queue is active, a queue failure is fail-closed and the legacy path is not a substitute.
+- W11-001 performed the one-time no-browser bootstrap using an out-of-band, non-interactive repository-administration credential. Its exact-head squash auto-merge was the pre-queue legacy enrollment path and is superseded by the active merge queue.
 - The rule activation timestamp must precede `mergedAt`. After the separately approved and consumed empty-origin baseline seed, direct push, REST merge, manual merge, `--admin`, and every check bypass are forbidden.
+
+### Merge queue contract
+
+- The active `develop` queue is the preferred and, once activated for W11-009, authoritative merge path. A green, open PR is eligible; enrollment is controller-owned and is not a merge or completion action.
+- Before enrollment, the controller must read the GraphQL `EnqueuePullRequestInput` schema and confirm `pullRequestId: ID!`, `expectedHeadOid: GitObjectID`, `jump: Boolean`, and `clientMutationId`. It then calls `enqueuePullRequest` with `expectedHeadOid` equal to the distinct latest PR head SHA. A worker never enqueues its own PR.
+- GitHub must build a protected `merge_group`, run the authentic GitHub Actions `required / gate` for that group, and execute the protected `SQUASH` only after every branch rule succeeds on the same head. The configured queue is `ALLGREEN`, one entry to build/merge, one-minute minimum wait, and a 60-minute check-response timeout.
+- Required evidence is distinct: PR head SHA, queue entry, merge-group SHA plus workflow/check-suite provider, GitHub-created final merged `develop` SHA, and a trusted `push` `ci.yml` success on that exact merged SHA. Settings read-back, enrollment, or a pending queue entry alone never makes a ticket Done.
 
 ## 4. Layer B — real Windows 11 OBS integration
 
@@ -193,7 +211,9 @@ After third-failure arbitration, the arbitrator records one of: targeted repair 
 
 ## 6. State transitions
 
-- Layer A PASS: PR may auto-merge when every branch rule is satisfied.
+- Merge-queue enrollment: the orchestrator may enqueue the verified exact latest head only after the `EnqueuePullRequestInput` schema is checked and `expectedHeadOid` is bound to that SHA; enrollment does not merge the pull request and is not completion evidence.
+- Layer A PASS: GitHub may execute the protected `SQUASH` only after it creates the `merge_group` and that group's `required / gate` plus every configured branch rule succeed on the same exact head.
+- The historical `enablePullRequestAutoMerge_SQUASH` enrollment path is superseded after queue activation and is valid only before the queue external gate; preserved attempt records are audit history, not a current completion requirement.
 - Layer A FAIL: PR cannot merge; use the retry budget.
 - Merge completed: Ticket becomes `Merged`, never immediately `Done`.
 - Trusted post-merge Layer A PASS on the exact merged SHA: a `layer_a_post_merge` or `layer_a_post_merge_automated` ticket becomes `Done`.

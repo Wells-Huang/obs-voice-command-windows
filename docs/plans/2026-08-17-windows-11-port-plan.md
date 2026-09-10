@@ -1,10 +1,10 @@
 # Windows 11 移植：高階規劃與 Ticket DAG
 
 - 日期：2026-08-17
-- 狀態：Planning amended after Sol xhigh bootstrap arbitration；W11-001 local evidence exists，remote promotion not started
+- 狀態：Repository transferred to Wells-sideproj；GitHub policy evidence verified；local origin URL update pending platform ACL；W11-005 remains paused pending merge-queue arbitration
 - 目標分支：`develop`
 - 基準 commit：`de6c588f981596ed13bc9cd0254ad4989a2686b3`
-- Windows origin：`https://github.com/Wells-Huang/obs-voice-command-windows.git`（已確認存在但無 refs／HEAD）
+- Windows origin：`https://github.com/Wells-sideproj/obs-voice-command-windows.git`（public、GitHub Free Organization、`develop` 為 default branch）
 - Read-only upstream：`https://github.com/htlin222/obs-voice-command.git`
 - 動態 tracker bootstrap：`docs/plans/2026-08-17-windows-11-ticket-manifest.yml`
 
@@ -120,7 +120,7 @@ Windows 實作優先使用標準庫 `ctypes` 呼叫 `SetProcessDpiAwarenessConte
 7. scene 中有多個候選顯示器來源且未設定 `source` 時，程式拒絕猜測並列出可設定的來源名稱。
 8. 不支援的 crop／rotation／非鋪滿 transform 在啟動時 fail fast；支援的來源在 zoom out、Ctrl-C、OBS reconnect 後精確復原原始 transform。
 9. 既有 matcher、zoom、config 與 macOS pointer tests 全數通過；新增 Windows backend、ObsClient contract、controller lifecycle 與 hardware-free pipeline tests。
-10. PR required check `required / gate` 成功才可 auto-merge；workflow 同時支援 `pull_request`，若使用 merge queue 也支援 `merge_group`。
+10. PR 的 `required / gate` 必須在 protected `merge_group` 上成功後，GitHub 才可執行 queue 的 squash merge；workflow 同時支援 `pull_request` 與 `merge_group`。Queue 啟用前的 exact-head auto-merge 僅是 legacy fallback。
 11. Ticket 依 manifest 的 `completion_profile` 由 Merged 轉 Done；所有 profile 都要求 exact merged SHA 的 trusted post-merge Layer A，只有 W11-011／W11-012 另要求同 SHA Layer B。失敗時建立去重的 Repair Ticket，附 commit、workflow run 和失敗 check。
 12. Windows 11 實機 E2E evidence 完成，README 有完整安裝、OBS 設定、麥克風權限、多螢幕限制與 troubleshooting。
 
@@ -142,14 +142,15 @@ Windows 實作優先使用標準庫 `ctypes` 呼叫 `SetProcessDpiAwarenessConte
 ```mermaid
 flowchart TD
     T1["W11-001 Preflight + bootstrap CI"] --> T2["W11-002 Platform boundary + full CI activation"]
-    T2 --> T5["W11-005 Layer A hardening"]
+    T2 --> Q9["External W11-009 merge-queue activation\n(policy_verified)"]
+    Q9 --> T9["W11-009 Tracker + PR gate + auto-merge"]
+    T9 --> T5["W11-005 Layer A hardening"]
     T5 --> T3["W11-003 Windows pointer/display backend"]
     T5 --> T4["W11-004 Runtime composition + capability guard"]
     T3 --> T6
     T4 --> T6
     T6 --> T7["W11-007 Hardware-free integration suite"]
     T6 --> T8
-    T5 --> T9["W11-009 Tracker + PR gate + auto-merge"]
     T7 --> T10["W11-010 Authoritative post-merge + inactive Layer B"]
     T8 --> T10
     T9 --> T10
@@ -163,12 +164,42 @@ flowchart TD
 - W11-007、W11-008 在 W11-006 合併並完成其 post-merge profile 後可平行。
 - 單一 ticket 因 auth／admin／硬體 gate Blocked 時，只封鎖其 descendants；orchestrator 繼續其他獨立 Ready tickets。
 
+### W11-009 merge queue external predecessor
+
+W11-009 的 external predecessor `w11_009_merge_queue_activation` 是一次性的
+GitHub policy gate，不是 code ticket。它必須在 W11-002 Done 後保持
+`policy_verified`，才可派發 W11-009；W11-005 維持等待 W11-009 完成。
+
+Ruleset `20990581` 的有效設定必須同時保留 zero-bypass、zero mandatory
+reviews、pull requests、strict `required / gate`（integration `15368`）、
+conversation resolution、linear history、deletion blocking 與
+non-fast-forward blocking，並啟用以下 merge queue：
+
+- method `SQUASH`、grouping `ALLGREEN`；
+- `max_entries_to_build=1`、`min_entries_to_merge=1`、
+  `max_entries_to_merge=1`；
+- `min_entries_to_merge_wait_minutes=1`、
+  `check_response_timeout_minutes=60`。
+
+Queue enrollment is controller-owned. A green, open PR is eligible only after
+the controller has checked the GraphQL input schema and calls
+`enqueuePullRequest` with `expectedHeadOid` equal to the distinct PR head SHA.
+GitHub's protected merge queue must create the `merge_group` and run
+`required / gate` for that group before GitHub executes the protected squash.
+Enrollment, settings read-back, or a pending queue entry is never Done evidence.
+
+The completion evidence chain is separate and ordered: PR head SHA, queue entry,
+merge-group SHA plus workflow/check-suite provider, GitHub-created final merged
+`develop` SHA, and a distinct trusted `push` run of `ci.yml` successful on that
+exact merged SHA. Any missing, stale, skipped, neutral, failed, or provider-
+ambiguous item keeps W11-009 out of Done.
+
 ### Empty origin external predecessor gate
 
 `empty_origin_baseline_seed` 不是 implementation ticket，也不走 PR completion profile；它是 W11-001 之前的一次性外部初始化 gate。
 
 1. 目前 state 為 `policy_verified`。使用者已明確批准且 seed exception 已消耗；origin 只有 `refs/heads/develop`，tip 與 pinned SHA 完全相同。
-2. Seed 後已確認 origin `HEAD` 與唯一 ref 都指向 `de6c588f981596ed13bc9cd0254ad4989a2686b3`。任何後續 drift／unexpected ref 回 Sol xhigh 仲裁。
+2. Seed 後已確認 origin `HEAD` 與唯一 ref 都指向 `de6c588f981596ed13bc9cd0254ad4989a2686b3`。任何後續 drift／unexpected ref 回 GPT-6 Astra medium 仲裁。
 3. 唯一允許的 seed command 是 `git push --porcelain origin de6c588f981596ed13bc9cd0254ad4989a2686b3:refs/heads/develop`。禁止 force、mirror、all、tags、local branch source、其他 ref/SHA 與第二次 direct push。
 4. Seed 只傳輸該既有 commit 的 reachable upstream history；目前工作樹中的 `.gitignore`、planning、routing、probe、validation、tests 和 CI 草稿不得進入 seed。
 5. Seed 後已將 `develop` 設為 default，並設定 squash-only、停用 merge/rebase merge、啟用 auto-merge 與 merge 後刪除 head branch。
@@ -193,7 +224,7 @@ Acceptance criteria：
 4. Bootstrap workflow 使用 GitHub-hosted runner、pinned actions、`contents: read`、無 secrets；不得安裝仍受 Quartz 阻擋的 Windows product、啟動 OBS、下載 ASR model 或開啟麥克風。
 5. 在 W11-001 branch／PR 前，external gate 已將 pristine baseline seed 到 origin、設為 default，並讀回驗證 active、zero-bypass、零 mandatory human review、要求 PR／strict update／linear history／禁止 force-push 與 deletion 的 `develop` rule。
 6. W11-001 branch 必須從 exact seeded `origin/develop` 建立；所有目前未提交 planning／routing／probe／validation／test／`.gitignore`／bootstrap CI 檔只能由此 PR 進入。
-7. PR 產生 authentic GitHub Actions check context 後，將其 `required / gate` 加到 active rule並驗證 provider；只允許 exact head SHA 的 GitHub squash auto-merge。除已消耗的 seed exception 外，禁止 direct push、REST/manual/admin merge。
+7. PR 產生 authentic GitHub Actions check context 後，將其 `required / gate` 加到 active rule並驗證 provider；W11-001 當時只允許 exact head SHA 的 pre-queue legacy GitHub squash auto-merge。除已消耗的 seed exception 外，禁止 direct push、REST/manual/admin merge；queue activation 後新 ticket 走 protected merge queue。
 8. 另一次 trusted `push` workflow 必須在 exact merged `develop` SHA 回報 success，才可 Done；所有 baseline test 與 remote evidence／blocker都必須精確記錄。
 
 Tests/evidence：preflight Markdown、probe unit tests、bootstrap CI run URL／workflow ID／check-suite app／head SHA／merged SHA、ruleset active timestamp、auto-merge evidence、敏感欄位確認已遮蔽。
@@ -334,22 +365,23 @@ Tests/evidence：全新 PowerShell session 逐行 smoke；README commands 與 CL
 
 ### W11-009 — Ticket tracker、PR gate 與 auto-merge
 
-- 初始狀態：Blocked
-- Depends on：W11-005
-- Completion profile：`layer_a_post_merge`；CI stage：`full`
-- 建議 touch set：`.github/PULL_REQUEST_TEMPLATE.md`、issue forms／labels bootstrap、repository settings evidence
+- 初始狀態：Ready（W11-002 已 Done，且 `w11_009_merge_queue_activation=policy_verified`）
+- Depends on：W11-002；external predecessor：`w11_009_merge_queue_activation`
+- Completion profile：`layer_a_post_merge`；CI stage：`full_activation`
+- 建議 touch set：`AGENTS.md`、`WORKFLOW.md`、本 plan／manifest、arbitrator route、routing assertions、`.github/PULL_REQUEST_TEMPLATE.md`、issue forms／labels bootstrap、`docs/validation/w11-009-merge-queue-*.md/json`
 - 目標：把 Ready → Done 狀態與 required checks 接到 GitHub PR 流程。
 
 Acceptance criteria：
 
-1. 以 `github_policy_admin` gate 稽核並強化 W11-001 建立的 `develop` ruleset／branch protection：PR required、GitHub Actions 提供的 `required / gate` required、零 bypass、禁止 force push/deletion、resolve conversations、linear history。
-2. 優先使用 merge queue；方案不提供時，要求 branch up to date 並使用 GitHub auto-merge。兩種情況都只能在 required gate 通過後 merge。
-3. 啟用 squash merge、auto-merge、merged branch auto-delete。
-4. PR template 強制填 Ticket ID、dependencies、acceptance evidence、test commands、manual checks、risk/rollback。
-5. tracker 使用精確狀態：Ready、Blocked、Doing、PR、Merged、Done；Repair Ticket 使用同一狀態機並加 `type:repair`。
-6. worker branch 為 `codex/w11-<ticket>-<slug>`，一個 worktree／branch／PR 只處理一張 ticket。
+1. 以已核准的 `github_policy_admin` gate 讀回並保留 `develop` ruleset／branch protection：PR required、GitHub Actions 提供的 strict `required / gate`（integration `15368`）required、零 bypass、禁止 force push/deletion、resolve conversations、linear history；不得由本 ticket 改寫 settings。
+2. Active merge queue 是首選、且在 external gate verified 後為 authoritative path。符合 required checks 的 open PR 才是 green/eligible；controller 先檢查 GraphQL `EnqueuePullRequestInput` schema，再以 `enqueuePullRequest` 傳入 exact `expectedHeadOid`，將 queue entry 綁定 distinct PR head SHA。worker 不自行 enqueue。原本的 branch-up-to-date 加 exact-head GitHub auto-merge 是 queue activation 前、無 queue capability 時的 legacy fallback，queue 啟用後不得以該 fallback 取代 queue，失敗即 fail closed。
+3. Queue 使用 `SQUASH`、`ALLGREEN`、`max_entries_to_build=1`、`min_entries_to_merge=1`、`max_entries_to_merge=1`、`min_entries_to_merge_wait_minutes=1`、`check_response_timeout_minutes=60`。GitHub 必須建立 `merge_group`，並在該 group 上通過 `required / gate` 後才可執行 protected squash；若 queue capability 失效則 fail closed，不可用 bypass 或人工 merge 代替。
+4. Repository settings evidence 必須確認 squash-only merge、auto-merge capability 與 merged head-branch auto-delete；W11-009 不自行改寫 settings。PR template 強制填 Ticket ID、dependencies、acceptance evidence、test commands、manual checks、risk/rollback，並要求記錄 queue-specific evidence。
+5. Tracker 使用精確狀態：Ready、Blocked、Doing、PR、Merged、Done；Repair Ticket 使用同一狀態機並加 `type:repair`。`repair.yml` 保留給 W11-010，不由 W11-009 建立或修改。
+6. Worker branch 為 `codex/w11-<ticket>-<slug>`，一個 worktree／branch／PR 只處理一張 ticket。
+7. Completion evidence 必須分別記錄：PR head SHA、queue entry、merge_group SHA／workflow run／check-suite provider、GitHub 實際 squash 後的 final merged `develop` SHA，以及 exact merged SHA 上成功的 trusted `push` `ci.yml` run。settings read-back、auto-merge enrollment 或 queue entry alone 都不得把 ticket 標成 Done；任何 SHA、run、provider 缺失／stale／failed／skipped／neutral 都 fail closed。
 
-Tests/evidence：ruleset export或設定截圖、成功 auto-merge 範例、required check fail 時無法 merge 的證據。
+Tests/evidence：`docs/validation/w11-009-merge-queue-arbitration.md`、對應 ruleset JSON、GraphQL schema 欄位讀取證據、template／labels／issue-form 靜態檢查、routing validator 與 routing tests。由 controller 補上 distinct PR／queue／merge_group／final merged develop／trusted push run evidence，以及 protected squash 與 required-check failure evidence；W11-009 worker 不執行 enqueue、merge 或 push。
 
 ### W11-010 — Develop post-merge CI 與 Repair Ticket loop
 
@@ -447,7 +479,7 @@ stateDiagram-v2
     Ready --> Doing: worker claims ticket/worktree
     Doing --> PR: PR opened + evidence attached
     PR --> Doing: review or CI requires changes
-    PR --> Merged: required gate PASS + auto-merge
+    PR --> Merged: protected queue merge_group required gate PASS + GitHub squash
     Merged --> Done: selected completion profile PASS on exact SHA
     Merged --> Blocked: selected completion profile FAIL
     Blocked --> Ready: Repair Ticket created
@@ -465,6 +497,7 @@ stateDiagram-v2
 8. `needs-human`、auth、admin、shared-runtime 或 hardware gate 只 block owning ticket 與 descendants；其餘獨立 Ready tickets 繼續。
 9. Unattended mode 禁止開瀏覽器／device-auth；只使用 existing CLI session、existing scoped token 或 existing app credential，且不得把 secret 寫入 repo、log、artifact 或 prompt。
 10. 不自動安裝 shared runtime、不未經批准修改 GitHub settings、不自動發布 release。唯一 direct-push 例外是 manifest 中經明確批准的 `empty_origin_baseline_seed`；其成功後永久消耗，任何後續 direct push、manual/REST/admin merge 或 check bypass 都禁止。
+11. Merge-queue enrollment 由 orchestrator/controller 執行：schema checked `enqueuePullRequest` 必須帶 exact `expectedHeadOid`；GitHub protected `merge_group` 上的 `required / gate` success 與實際 squash merge 才能產生後續 completion evidence，enrollment 本身不改 ticket 為 Done。
 
 ## 10. 開發啟動 gate
 

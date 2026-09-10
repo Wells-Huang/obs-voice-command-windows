@@ -13,8 +13,8 @@ The ticket manifest is authoritative for dependencies, model profiles, retry sta
 
 ## Repository topology and empty-origin gate
 
-- Local `origin` is `https://github.com/Wells-Huang/obs-voice-command-windows.git`; local `upstream` is the read-only source `https://github.com/htlin222/obs-voice-command.git`.
-- The Windows origin was seeded exactly once at `de6c588f981596ed13bc9cd0254ad4989a2686b3`, is currently public, and has only `refs/heads/develop`; its external predecessor gate, `empty_origin_baseline_seed`, is now `policy_verified`.
+- The canonical Windows repository is `https://github.com/Wells-sideproj/obs-voice-command-windows.git`; local `origin` must point there after the transfer. Local `upstream` is the read-only source `https://github.com/htlin222/obs-voice-command.git`.
+- The Windows repository was seeded exactly once at `de6c588f981596ed13bc9cd0254ad4989a2686b3`, remains public, and is now owned by the GitHub Free Organization `Wells-sideproj`; its external predecessor gate, `empty_origin_baseline_seed`, is `policy_verified`.
 - The seed requires explicit human approval plus existing non-interactive GitHub write and administration authority. Public read access, Codex authentication, or repository ownership inferred from its name is not permission evidence.
 - The only permitted direct-push exception is one creation of the absent `refs/heads/develop` at exactly `de6c588f981596ed13bc9cd0254ad4989a2686b3`, using the manifest's full-OID refspec after every precondition passes. It may not include any current working-tree file, tag, other ref, force option, or second push.
 - After the seed, the sole remote ref and exact SHA, `develop` default branch, merge settings, and active zero-bypass `develop` rule were read back successfully before any W11 branch was pushed.
@@ -37,7 +37,7 @@ Model routing is enforced by project-scoped Codex custom agents or exact spawn-t
 - Resolve a ticket's worker profile from `ticket.execution.worker_profile` when present, otherwise from `execution_defaults.worker_profile`.
 - Resolve arbitration from `ticket.execution.arbitration_profile` when present, otherwise from `execution_defaults.arbitration_profile`.
 - For implementation or repair, the controller must dispatch the `windows_worker` route, pinned in `.codex/agents/windows-worker.toml` to `gpt-5.6-luna` with `model_reasoning_effort = "max"`.
-- For planning arbitration or third-failure root-cause analysis, the controller must dispatch `windows_arbitrator`, pinned in `.codex/agents/windows-arbitrator.toml` to `gpt-5.6-sol` with `model_reasoning_effort = "xhigh"`, and wait for its result.
+- For planning arbitration or third-failure root-cause analysis, the controller must dispatch `windows_arbitrator`, pinned in `.codex/agents/windows-arbitrator.toml` to `gpt-6-astra` with `model_reasoning_effort = "medium"`, and wait for its result.
 - When the client supports named custom agents, dispatch the named agent. When the spawn interface exposes only model and effort overrides, pass the route's exact `model` and `model_reasoning_effort` explicitly and include the matching custom-agent instructions in the child prompt. Never omit either override.
 - Never use a generic built-in worker, the parent agent, or another available model as a silent fallback for either route.
 - The controller may perform deterministic scheduling and state bookkeeping. It must not implement a ticket itself or substitute its own judgment for required arbitration.
@@ -49,7 +49,9 @@ The parent task may be set to Luna without weakening arbitration. The route's cu
 
 - A worker must never merge its own pull request, use an admin bypass, disable a check, or weaken a test to obtain a pass.
 - Local tests are evidence, not merge authority.
-- GitHub may auto-merge only after every required pre-merge status check has succeeded on the latest pull-request commit.
+- With the active `develop` merge queue, only the orchestrator may enroll a green, open pull request by schema-checked `enqueuePullRequest` with `expectedHeadOid` equal to the exact latest PR head SHA. GitHub must create the protected `merge_group` and execute the squash only after `required / gate` and every branch rule succeed on that same head. A worker never enqueues, merges, or bypasses protection.
+- The pre-queue `enablePullRequestAutoMerge_SQUASH` contract is historical, superseded after `w11_009_merge_queue_activation`, and valid only before queue activation when no queue capability exists. It is not a current completion requirement; its attempt records remain audit history.
+- Any head change invalidates prior queue or enrollment evidence. Revalidate the new exact head and its protected checks before enrollment, and do not push further commits after enrollment.
 - The stable branch-protection check is `required / gate`. It must aggregate every Layer A required job and fail if any required job fails or is cancelled.
 - `continue-on-error` is forbidden for required checks.
 - A pull request with a failing, missing, stale, or cancelled required check remains in `PR` or returns to `Doing`.
@@ -61,7 +63,7 @@ The parent task may be set to Luna without weakening arbitration. The route's cu
 - Runs before merge on GitHub-hosted Windows.
 - Covers locked dependency installation, build/import smoke, unit tests, adapter tests, hardware-free component tests, and CLI tests.
 - Must not require a microphone, ASR model download, a real OBS process, or a persistent desktop session.
-- Layer A is part of `required / gate` and therefore blocks auto-merge.
+- Layer A is part of `required / gate` and therefore blocks protected merge-queue execution (and the superseded pre-queue auto-merge fallback).
 
 ### Layer B: real Windows 11 integration
 
