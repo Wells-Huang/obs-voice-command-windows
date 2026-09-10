@@ -704,11 +704,11 @@ tickets:
       merge_group_required_check: required / gate
       merge_execution: github_protected_squash_after_merge_group_success
       stop_automatic_cycling: true
-      historical_legacy_enrollment_contract:
-        status: superseded
-        valid_only_before: w11_009_merge_queue_activation
-        mutation: enablePullRequestAutoMerge_SQUASH
-        evidence: auto_merge_attempt_evidence
+    historical_legacy_enrollment_contract:
+      status: superseded
+      valid_only_before: w11_009_merge_queue_activation
+      mutation: enablePullRequestAutoMerge_SQUASH
+      evidence: auto_merge_attempt_evidence
     optimized_enrollment_attempt_evidence:
       head_sha: b0932995554406da4726d3da7aef9095e3d51e4f
       ruleset_id: 20990581
