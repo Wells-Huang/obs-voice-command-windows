@@ -79,7 +79,7 @@ execution_defaults:
         )
         self.assertRegex(ticket_body, r"(?m)^    ci_stage: bootstrap$")
 
-    def test_w11_002_workflow_is_full_activation_with_stable_gate(self) -> None:
+    def test_w11_005_workflow_is_full_matrix_with_stable_gate(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(
             encoding="utf-8"
         )
@@ -93,17 +93,18 @@ execution_defaults:
             self.assertIn(job_name, workflow)
 
         self.assertIn("permissions:\n  contents: read", workflow)
-        self.assertIn("CI_STAGE: full_activation", workflow)
+        self.assertIn("CI_STAGE: full", workflow)
         self.assertIn("uv sync --frozen", workflow)
         self.assertIn("if: ${{ always() }}", workflow)
-        self.assertIn("needs: [windows_unit, macos_regression, package]", workflow)
-        self.assertIn("needs.windows_unit.result", workflow)
-        self.assertIn("needs.macos_regression.result", workflow)
+        self.assertIn("needs: [platform_matrix, package]", workflow)
+        self.assertIn("needs.platform_matrix.result", workflow)
         self.assertIn("needs.package.result", workflow)
         self.assertNotIn("continue-on-error", workflow)
         self.assertNotIn("secrets.", workflow)
         self.assertNotIn("CI_STAGE: bootstrap", workflow)
         self.assertNotIn("ci_stage=bootstrap", workflow)
+        self.assertNotIn("full_activation", workflow)
+        self.assertNotIn("platform_matrix.result", workflow.split("  required_gate:", 1)[0])
 
         workflow_lower = workflow.lower()
         for forbidden in (
@@ -134,7 +135,11 @@ execution_defaults:
         gate_body = gate_match.group("body") if gate_match else ""
         self.assertRegex(
             gate_body,
-            r'(?s)if \[\[ "\$CI_STAGE" != "full_activation" \]\]; then.*?exit 1.*?fi',
+            r'(?s)if \[\[ "\$CI_STAGE" != "full" \]\]; then.*?exit 1.*?fi',
+        )
+        self.assertRegex(
+            gate_body,
+            r'(?s)if \[\[ "\$PLATFORM_MATRIX_RESULT" != "success" \|\| "\$PACKAGE_RESULT" != "success" \]\]; then.*?exit 1.*?fi',
         )
 
 
