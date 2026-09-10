@@ -20,9 +20,9 @@ class ModelRoutingTests(unittest.TestCase):
         self.assertEqual(
             report.routes["implementer"]["model_reasoning_effort"], "max"
         )
-        self.assertEqual(report.routes["arbitrator"]["model"], "gpt-5.6-sol")
+        self.assertEqual(report.routes["arbitrator"]["model"], "gpt-6-astra")
         self.assertEqual(
-            report.routes["arbitrator"]["model_reasoning_effort"], "xhigh"
+            report.routes["arbitrator"]["model_reasoning_effort"], "medium"
         )
 
     def test_manifest_model_profiles_parser_stops_at_next_section(self) -> None:

@@ -1,0 +1,108 @@
+name: Windows 11 ticket
+description: Track one scoped Windows 11 delivery ticket with auditable acceptance evidence.
+title: "[W11-] "
+labels:
+  - "type:ticket"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use one issue for one ticket. Repair issues are created by the W11-010 repair workflow and use `type:repair`.
+
+  - type: input
+    id: ticket_id
+    attributes:
+      label: Ticket ID
+      description: Use the manifest ID, for example W11-009.
+      placeholder: W11-009
+    validations:
+      required: true
+
+  - type: dropdown
+    id: status
+    attributes:
+      label: Tracker status
+      description: New issues are untriaged; the controller assigns eligibility and the manifest status. PR is not Done.
+      options:
+        - Untriaged (controller assigns status)
+        - Ready
+        - Blocked
+        - Doing
+        - PR
+        - Merged
+        - Done
+      default: 0
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies and external gates
+      description: List ticket dependencies, their states, and any policy/admin gate with durable evidence.
+      placeholder: |
+        Depends on: W11-002 (Done)
+        External gate: w11_009_merge_queue_activation (policy_verified)
+        Evidence: docs/validation/...
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria and evidence
+      description: Copy the manifest criteria and link exact evidence for each item.
+      placeholder: |
+        - [ ] Criterion: ...
+          Evidence: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: verification
+    attributes:
+      label: Test commands and results
+      description: Record exact local or CI commands and their results. Do not paste secrets.
+      placeholder: |
+        Command: ...
+        Result: PASS
+    validations:
+      required: true
+
+  - type: textarea
+    id: manual_checks
+    attributes:
+      label: Manual and policy checks
+      description: Record read-back checks, provider identity, and any deferred gate.
+      placeholder: |
+        - Check: ...
+          Result: PASS / BLOCKED
+    validations:
+      required: true
+
+  - type: textarea
+    id: queue_evidence
+    attributes:
+      label: Merge-queue and exact-SHA evidence
+      description: For queue-enabled work, keep these values distinct; enrollment or settings read-back alone is never Done evidence.
+      placeholder: |
+        PR head SHA:
+        Queue entry:
+        merge_group SHA/run/provider:
+        Final merged develop SHA:
+        Trusted push ci.yml run on exact merged SHA:
+        Schema check: enqueuePullRequest expectedHeadOid bound to PR head
+    validations:
+      required: false
+
+  - type: textarea
+    id: risk_rollback
+    attributes:
+      label: Risk and rollback
+      description: State the risk, reversible rollback, and cleanup/restore evidence.
+      placeholder: |
+        Risk: ...
+        Rollback: ...
+        Cleanup evidence: ...
+    validations:
+      required: true

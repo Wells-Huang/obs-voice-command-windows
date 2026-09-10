@@ -8,10 +8,19 @@ branch_prefix: codex/
 initial_ticket: W11-001
 repository_topology:
   origin:
-    url: https://github.com/Wells-Huang/obs-voice-command-windows.git
+    url: https://github.com/Wells-sideproj/obs-voice-command-windows.git
     role: windows_delivery
     observed_state: policy_verified
-    observed_at: "2026-08-18"
+    observed_at: "2026-09-07"
+    organization: Wells-sideproj
+    organization_plan: free
+    transferred_from: Wells-Huang/obs-voice-command-windows
+    transfer_verified: true
+    local_origin:
+      expected_url: https://github.com/Wells-sideproj/obs-voice-command-windows.git
+      observed_url: https://github.com/Wells-sideproj/obs-voice-command-windows.git
+      state: verified
+      evidence: "2026-09-09: approved git remote set-url succeeded and read-back matched; existing credential verified admin/maintain/push and squash-only auto-merge settings."
     visibility: public
     configured_default_branch_before_seed: main
     seeded_ref: refs/heads/develop
@@ -20,7 +29,7 @@ repository_topology:
     observed_ref_count_after_seed: 1
     authenticated_permissions:
       verified_at: "2026-08-18"
-      repository_identity: Wells-Huang/obs-voice-command-windows
+      repository_identity: Wells-sideproj/obs-voice-command-windows
       archived: false
       disabled: false
       push: true
@@ -54,10 +63,10 @@ model_profiles:
     role: implementation
   arbitrator:
     tier: high
-    preferred_model: "5.6 Sol XHigh"
+    preferred_model: "GPT-6 Astra Medium"
     codex_agent: windows_arbitrator
-    model: gpt-5.6-sol
-    model_reasoning_effort: xhigh
+    model: gpt-6-astra
+    model_reasoning_effort: medium
     sandbox_mode: read-only
     role: planning_and_arbitration
 execution_defaults:
@@ -67,9 +76,9 @@ execution_defaults:
 runtime_routing:
   engine: codex_subagents
   state: ready
-  last_validated_at: "2026-08-18"
-  validation_evidence: docs/validation/2026-08-18-model-routing-smoke.md
-  validated_execution_context: codex_exec_standalone
+  last_validated_at: "2026-09-10T20:10:10.439+08:00"
+  validation_evidence: docs/validation/w11-009-merge-queue-routing-preflight.md
+  validated_execution_context: codex_exec_desktop
   project_config: .codex/config.toml
   agent_directory: .codex/agents
   validator: tools/validate_model_routing.py
@@ -125,12 +134,47 @@ external_gate_state_values:
   - policy_verified
   - unexpected_remote_state_needs_human
 external_predecessor_gates:
+  w11_009_merge_queue_activation:
+    owner: W11-009
+    kind: external_non_code_policy_activation
+    state: policy_verified
+    verified_at: "2026-09-10T19:54:02.997+08:00"
+    evidence: docs/validation/w11-009-merge-queue-arbitration.md
+    state_values: [unverified, policy_verified, blocked]
+    depends_on: [W11-002]
+    retry_budget_scope: none
+    approval_gate_status:
+      github_policy_admin: approved
+      option_b_dependency_change: approved
+    approval_provenance: "User chose B, finish W11-005 then pause; approved public Free Organization transfer and existing-credential ruleset admin API."
+    ruleset_id: 20990581
+    evidence_required: [effective_rules_before, merge_group_on_develop, ruleset_after, effective_rules_after]
+    protected_ref_mutation_allowed: false
+    queue_contract:
+      merge_method: SQUASH
+      grouping_strategy: ALLGREEN
+      max_entries_to_build: 1
+      min_entries_to_merge: 1
+      max_entries_to_merge: 1
+      min_entries_to_merge_wait_minutes: 1
+      check_response_timeout_minutes: 60
+      enqueue_mutation: enqueuePullRequest
+      input_type: EnqueuePullRequestInput
+      schema_checked_by: controller
+      expected_head_oid_required: true
+      worker_enqueue_forbidden: true
+      schema_fields:
+        pullRequestId: "ID!"
+        expectedHeadOid: GitObjectID
+        jump: Boolean
+        clientMutationId: present
+      protected_merge_group_required_check: required / gate
   empty_origin_baseline_seed:
     kind: external_non_code_initialization
     state: policy_verified
     predecessor_of: W11-001
     retry_budget_scope: none
-    destination_repository: https://github.com/Wells-Huang/obs-voice-command-windows.git
+    destination_repository: https://github.com/Wells-sideproj/obs-voice-command-windows.git
     destination_ref: refs/heads/develop
     exact_sha: de6c588f981596ed13bc9cd0254ad4989a2686b3
     exact_refspec: de6c588f981596ed13bc9cd0254ad4989a2686b3:refs/heads/develop
@@ -225,18 +269,24 @@ completion_profiles:
       - active_zero_bypass_pull_request_rule
       - zero_required_human_reviews_for_unattended
       - required_gate_success_on_exact_head_sha
-      - github_squash_auto_merge_executed_by_github_after_branch_rules_satisfied
+      - github_protected_merge_queue_squash_after_merge_group_required_gate
     auto_merge_enrollment_alone_is_completion_evidence: false
     done_requires:
       - trusted_ci_push_run_success_on_exact_merged_develop_sha
     temporary_provider: .github/workflows/ci.yml
+    grandfathered_pre_activation_evidence:
+      tickets: [W11-001, W11-002]
+      queue_cutover: w11_009_merge_queue_activation
+      rule: "Preserve their recorded pre-activation GitHub squash auto-merge evidence; the active queue contract does not retroactively invalidate Done tickets."
+      legacy_auto_merge_evidence: preserved_as_historical
+      retroactive_invalidation: forbidden
   layer_a_post_merge_automated:
     applies_to: [W11-010]
     pre_merge_requires:
       - active_zero_bypass_pull_request_rule
       - zero_required_human_reviews_for_unattended
       - required_gate_success_on_exact_head_sha
-      - github_squash_auto_merge_executed_by_github_after_branch_rules_satisfied
+      - github_protected_merge_queue_squash_after_merge_group_required_gate
     auto_merge_enrollment_alone_is_completion_evidence: false
     done_requires:
       - trusted_post_merge_run_success_on_exact_merged_develop_sha
@@ -348,6 +398,8 @@ status_values:
   - Done
 required_check: required / gate
 orchestrator_rules:
+  stop_after_ticket_done: W11-005
+  serialized_policy_ownership: [W11-009, W11-005]
   dispatch_only_when_dependencies_done: true
   one_ticket_per_branch: true
   one_ticket_per_worktree: true
@@ -556,21 +608,21 @@ tickets:
   - id: W11-005
     epic: E4
     title: Full Layer A required-gate hardening
-    status: Blocked
+    status: Doing
     completion_profile: layer_a_post_merge
     ci_stage: full
     arbitration:
-      state: requested
-      reason: "The one authorized optimized enrollment attempt also lost the short pending-check window: the exact-head GitHub Actions suite completed before the fail-closed GraphQL precondition check, so no enrollment mutation was sent. Automatic cycling is stopped."
-      decision: needs_human
-      decision_question: "Choose an explicit merge-authority policy: allow a protected exact-head squash merge after all required checks pass, or authorize W11-009 to introduce a durable merge-queue/review gate before W11-005 can complete."
+      state: resolved
+      reason: "Astra medium resolved the circular W11-009 dependency: external queue activation, then W11-009 code completion, then W11-005 completion."
+      decision: dependency_dag_change
+      decision_question: "Resolved by agent 01a08b27-5d7e-7d93-96f3-8932a7dc8ac3: queue activation is an external configuration gate, not a code ticket requiring a prior merge."
       profile: arbitrator
       route: windows_arbitrator
-      model: gpt-5.6-sol
-      model_reasoning_effort: xhigh
-      human_input_required: true
+      model: gpt-6-astra
+      model_reasoning_effort: medium
+      human_input_required: false
       confidence: high
-      dependency_dag_change: none
+      dependency_dag_change: W11-002_then_queue_activation_then_W11-009_then_W11-005
       prior_decision: targeted_repair
       prior_reason: "W11-005 owns the intentional transition to ci_stage=full, while two W11-002 executable contract tests encode the transitional stage and separate-job layout outside the original touch set."
       approved_layout: "platform_matrix emits the stable Windows and macOS check names; package remains separate; required_gate aggregates platform_matrix and package."
@@ -640,13 +692,23 @@ tickets:
       second_bypass_used: false
       second_consume_code_retry_budget: false
     enrollment_strategy:
-      ruleset_verification_timing: immediately_before_push
+      ruleset_verification_timing: immediately_before_enqueue
       ruleset_snapshot_scope: same_uninterrupted_attempt
-      post_push_slow_ruleset_reread_required: false
-      post_push_required_read: exact_pr_head_and_authentic_actions_rollup
+      post_enqueue_slow_ruleset_reread_required: false
+      post_enqueue_required_read: exact_pr_head_and_authentic_merge_group_rollup
       wait_for_individual_jobs: false
-      mutation: enablePullRequestAutoMerge_SQUASH
+      mutation: enqueuePullRequest
+      input_type: EnqueuePullRequestInput
+      schema_checked_by: controller
+      expected_head_oid: required_exact_pr_head_sha
+      merge_group_required_check: required / gate
+      merge_execution: github_protected_squash_after_merge_group_success
       stop_automatic_cycling: true
+      historical_legacy_enrollment_contract:
+        status: superseded
+        valid_only_before: w11_009_merge_queue_activation
+        mutation: enablePullRequestAutoMerge_SQUASH
+        evidence: auto_merge_attempt_evidence
     optimized_enrollment_attempt_evidence:
       head_sha: b0932995554406da4726d3da7aef9095e3d51e4f
       ruleset_id: 20990581
@@ -665,8 +727,9 @@ tickets:
       direct_merge_attempted: false
       bypass_used: false
       consume_code_retry_budget: false
-    depends_on: [W11-002]
+    depends_on: [W11-002, W11-009]
     touch_set:
+      - docs/plans/2026-08-17-windows-11-ticket-manifest.yml
       - AGENTS.md
       - WORKFLOW.md
       - uv.lock
@@ -745,9 +808,33 @@ tickets:
   - id: W11-009
     epic: E6
     title: Ticket tracker, PR gate, and auto-merge
-    status: Blocked
+    status: Done
+    completion_evidence:
+      pull_request: https://github.com/Wells-sideproj/obs-voice-command-windows/pull/7
+      pull_request_head_sha: d5a879e04d48430308821413d93e55ada2ca014e
+      pre_merge_workflow_run_id: 34508888391
+      pre_merge_required_gate: success
+      queue_entry: MQE_lQDOT8W6Tc8AAAABDB_X5s4ABAZczgLMrdk
+      merge_group_sha: 512262c0556bf84beb9582b28ec7fcac1bd99430
+      merge_group_run_id: 34509075201
+      merge_group_check_suite_id: 93485779981
+      merge_group_required_gate: success
+      required_check_integration_id: 15368
+      merge_method: protected_merge_queue_squash
+      merged_develop_sha: 512262c0556bf84beb9582b28ec7fcac1bd99430
+      merged_at: "2026-09-10T17:35:59Z"
+      post_merge_workflow_run_id: 34509198901
+      post_merge_check_suite_id: 93486114554
+      post_merge_event: push
+      post_merge_required_gate: success
+      layer_b_required: false
+    delivery_evidence:
+      pull_request: https://github.com/Wells-sideproj/obs-voice-command-windows/pull/7
+      pull_request_head_sha: d5a879e04d48430308821413d93e55ada2ca014e
+      pre_merge_workflow_run: https://github.com/Wells-sideproj/obs-voice-command-windows/actions/runs/34508888391
+      queue_and_post_merge_evidence: verified
     completion_profile: layer_a_post_merge
-    ci_stage: full
+    ci_stage: full_activation
     execution:
       escalation_threshold: low
     arbitration:
@@ -761,13 +848,41 @@ tickets:
       repair_ticket: null
       last_failed_layer: null
       last_failed_run: null
-    depends_on: [W11-005]
+    depends_on: [W11-002]
+    depends_on_external: [w11_009_merge_queue_activation]
     touch_set:
+      - AGENTS.md
+      - WORKFLOW.md
+      - docs/plans/2026-08-17-windows-11-port-plan.md
+      - docs/plans/2026-08-17-windows-11-ticket-manifest.yml
+      - .codex/agents/windows-arbitrator.toml
+      - tests/test_model_routing.py
+      - docs/validation/w11-009-merge-queue-*.md
+      - docs/validation/w11-009-merge-queue-*.json
       - .github/PULL_REQUEST_TEMPLATE.md
       - .github/ISSUE_TEMPLATE/**
       - .github/labels.yml
     approval_gates:
       - github_policy_admin
+    approval_gate_status:
+      github_policy_admin: approved
+    queue_contract:
+      eligibility: green_open_pull_request
+      enqueue_mutation: enqueuePullRequest
+      schema_input: EnqueuePullRequestInput
+      schema_check_owner: controller
+      expected_head_oid: exact_pr_head_sha
+      merge_group_required_check: required / gate
+      merge_execution: github_protected_squash_after_merge_group_success
+      enrollment_is_completion_evidence: false
+      evidence:
+        - distinct_pr_head_sha
+        - queue_entry
+        - merge_group_sha
+        - merge_group_workflow_run
+        - merge_group_check_suite_provider
+        - final_merged_develop_sha
+        - trusted_push_ci_run_on_exact_merged_sha
   - id: W11-010
     epic: E6
     title: Authoritative post-merge Layer A, inactive Layer B harness, and Repair Ticket loop

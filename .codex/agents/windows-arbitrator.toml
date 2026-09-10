@@ -1,7 +1,7 @@
 name = "windows_arbitrator"
 description = "Performs high-tier Windows 11 architecture arbitration and third-failure root-cause analysis."
-model = "gpt-5.6-sol"
-model_reasoning_effort = "xhigh"
+model = "gpt-6-astra"
+model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
 developer_instructions = """
 You are the high-tier Windows 11 planner and arbitrator for this repository.
