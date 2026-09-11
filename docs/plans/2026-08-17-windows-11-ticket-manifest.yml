@@ -564,7 +564,26 @@ tickets:
   - id: W11-003
     epic: E1
     title: Windows pointer and display backend
-    status: Doing
+    status: Done
+    completion_evidence:
+      pull_request: https://github.com/Wells-sideproj/obs-voice-command-windows/pull/8
+      pull_request_head_sha: b176a3d772a740d56754e48b532c1a18f6c00197
+      pre_merge_workflow_run_id: 34582169926
+      pre_merge_required_gate: success
+      queue_entry: MQE_lQDOT8W6Tc8AAAABDHmuSc4ABAZczgLOsUQ
+      merge_group_sha: b524072cb218f2bd1d16ab56120e65f1f533aeb1
+      merge_group_run_id: 34582321733
+      merge_group_check_suite_id: 93680039477
+      merge_group_required_gate: success
+      required_check_integration_id: 15368
+      merge_method: protected_merge_queue_squash
+      merged_develop_sha: b524072cb218f2bd1d16ab56120e65f1f533aeb1
+      merged_at: "2026-09-11T09:05:10Z"
+      post_merge_workflow_run_id: 34582395165
+      post_merge_check_suite_id: 93680233404
+      post_merge_event: push
+      post_merge_required_gate: success
+      layer_b_required: false
     completion_profile: layer_a_post_merge
     ci_stage: full
     arbitration:
