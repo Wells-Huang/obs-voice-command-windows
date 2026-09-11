@@ -568,9 +568,15 @@ tickets:
     completion_profile: layer_a_post_merge
     ci_stage: full
     arbitration:
-      state: none
-      reason: null
-      decision: null
+      state: resolved
+      reason: "Existing platform-selection test requires temporary pending W11-003 exception; approved narrow test ownership expansion preserves lazy construction and unsupported-host contracts."
+      decision: targeted_repair
+      agent_id: 01a08e9e-dd23-7f42-9135-036ccc8855ca
+      route: windows_arbitrator
+      model: gpt-6-astra
+      model_reasoning_effort: medium
+      human_input_required: false
+      confidence: high
     retry:
       state: none
       consecutive_code_failures: 0
@@ -582,6 +588,7 @@ tickets:
     touch_set:
       - src/obs_voice_command/platform/windows.py
       - tests/test_windows_display.py
+      - tests/test_platform_selection.py
   - id: W11-004
     epic: E2
     title: Runtime composition, CLI capability, and lifecycle seam
