@@ -398,7 +398,9 @@ status_values:
   - Done
 required_check: required / gate
 orchestrator_rules:
-  stop_after_ticket_done: W11-005
+  stop_after_ticket_done: null
+  execution_state: running
+  resume_authorization: "User requested continue after verified W11-005 completion; previous stop boundary released."
   serialized_policy_ownership: [W11-009, W11-005]
   dispatch_only_when_dependencies_done: true
   one_ticket_per_branch: true
@@ -562,13 +564,19 @@ tickets:
   - id: W11-003
     epic: E1
     title: Windows pointer and display backend
-    status: Blocked
+    status: Doing
     completion_profile: layer_a_post_merge
     ci_stage: full
     arbitration:
-      state: none
-      reason: null
-      decision: null
+      state: resolved
+      reason: "Existing platform-selection test requires temporary pending W11-003 exception; approved narrow test ownership expansion preserves lazy construction and unsupported-host contracts."
+      decision: targeted_repair
+      agent_id: 01a08e9e-dd23-7f42-9135-036ccc8855ca
+      route: windows_arbitrator
+      model: gpt-6-astra
+      model_reasoning_effort: medium
+      human_input_required: false
+      confidence: high
     retry:
       state: none
       consecutive_code_failures: 0
@@ -580,10 +588,11 @@ tickets:
     touch_set:
       - src/obs_voice_command/platform/windows.py
       - tests/test_windows_display.py
+      - tests/test_platform_selection.py
   - id: W11-004
     epic: E2
     title: Runtime composition, CLI capability, and lifecycle seam
-    status: Blocked
+    status: Doing
     completion_profile: layer_a_post_merge
     ci_stage: full
     arbitration:
@@ -608,7 +617,26 @@ tickets:
   - id: W11-005
     epic: E4
     title: Full Layer A required-gate hardening
-    status: Doing
+    status: Done
+    completion_evidence:
+      pull_request: https://github.com/Wells-sideproj/obs-voice-command-windows/pull/5
+      pull_request_head_sha: 07686cff35315d0fd57223d37eec598ed7cacdfc
+      pre_merge_workflow_run_id: 34539748001
+      pre_merge_required_gate: success
+      queue_entry: MQE_lQDOT8W6Tc8AAAABAtiR2M4ABAZczgLNpII
+      merge_group_sha: e5fb24ffa8900f8f62c9c002dbed93c463b81255
+      merge_group_run_id: 34539926270
+      merge_group_check_suite_id: 93570833872
+      merge_group_required_gate: success
+      required_check_integration_id: 15368
+      merge_method: protected_merge_queue_squash
+      merged_develop_sha: e5fb24ffa8900f8f62c9c002dbed93c463b81255
+      merged_at: "2026-09-10T22:58:23Z"
+      post_merge_workflow_run_id: 34539991235
+      post_merge_check_suite_id: 93571001405
+      post_merge_event: push
+      post_merge_required_gate: success
+      layer_b_required: false
     completion_profile: layer_a_post_merge
     ci_stage: full
     arbitration:
