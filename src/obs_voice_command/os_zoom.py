@@ -7,11 +7,16 @@ from types import ModuleType
 from .platform import UnsupportedPlatformError
 
 
-def _macos_adapter() -> ModuleType:
+def ensure_supported() -> None:
+    """Validate the platform without importing the macOS Quartz adapter."""
     if sys.platform != "darwin":
         raise UnsupportedPlatformError(
             f"OS zoom is available only on macOS; current platform is {sys.platform!r}"
         )
+
+
+def _macos_adapter() -> ModuleType:
+    ensure_supported()
 
     # Quartz remains lazy so importing the CLI is safe on every platform.
     from .platform import macos_os_zoom

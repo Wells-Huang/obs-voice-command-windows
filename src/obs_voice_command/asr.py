@@ -1,9 +1,12 @@
 """Streaming ASR using sherpa-onnx with bilingual Chinese-English model."""
 
 import importlib.util
+import sys
 import tarfile
 import urllib.request
 from pathlib import Path
+
+import numpy as np
 
 
 def _ensure_onnxruntime_dylib() -> None:
@@ -25,11 +28,8 @@ def _ensure_onnxruntime_dylib() -> None:
         return
 
 
-_ensure_onnxruntime_dylib()
-
-import numpy as np
-import sherpa_onnx  # noqa: E402
-from opencc import OpenCC  # noqa: E402
+if sys.platform == "darwin":
+    _ensure_onnxruntime_dylib()
 
 MODEL_URL = (
     "https://github.com/k2-fsa/sherpa-onnx/releases/download/"
@@ -88,6 +88,12 @@ class Asr:
         Args:
             model_dir: Path to extracted model directory.
         """
+        # Keep the heavyweight ASR stack out of CLI capability checks and
+        # --list-devices.  The imports are still part of the normal ASR
+        # startup path and therefore preserve the existing public behavior.
+        import sherpa_onnx
+        from opencc import OpenCC
+
         self.recognizer = sherpa_onnx.OnlineRecognizer.from_transducer(
             tokens=str(model_dir / "tokens.txt"),
             encoder=str(model_dir / "encoder-epoch-99-avg-1.int8.onnx"),
